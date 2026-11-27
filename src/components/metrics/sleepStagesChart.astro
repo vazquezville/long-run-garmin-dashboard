@@ -1,0 +1,48 @@
+---
+import { average } from "../../lib/data/aggregate.ts";
+import type { Night } from "../../lib/data/types.ts";
+import { formatCount, formatDay, formatDuration, formatWeekday } from "../../lib/format.ts";
+import { listDays, type DateRange } from "../../lib/garmin/ranges.ts";
+import { sleepStages } from "../../lib/sleepStages.ts";
+import ChartPanel from "../charts/chartPanel.astro";
+import ColumnChart from "../charts/columnChart.astro";
+
+interface Props {
+  nights: Night[];
+  range: DateRange;
+  empty?: string | false;
+  height?: number;
+  isLead?: boolean;
+}
+
+const { nights, range, empty, height = 200, isLead = false } = Astro.props;
+const mean = average(nights.map((night) => night.totalSec));
+const note = `${formatDuration(mean)} asleep on average over ${formatCount(nights.length, "recorded night")}, empty days were not recorded`;
+const nightByDate = new Map(nights.map((night) => [night.date, night]));
+
+const columns = listDays(range).map((date) => {
+  const night = nightByDate.get(date);
+  return {
+    label: formatDay(date),
+    segments: night ? sleepStages.map((stage) => ({ value: night[stage.key] / 3600, color: stage.color })) : [],
+    tip: {
+      title: formatWeekday(date),
+      rows: night
+        ? [
+            ...sleepStages.map((stage) => ({ label: stage.label, value: formatDuration(night[stage.key]), color: stage.color })),
+            { label: "asleep", value: formatDuration(night.totalSec) },
+          ]
+        : [{ label: "", value: "Not recorded" }],
+    },
+  };
+});
+
+const table = {
+  head: ["Night", ...sleepStages.map((stage) => stage.label)],
+  rows: nights.toReversed().map((night) => [formatWeekday(night.date), ...sleepStages.map((stage) => formatDuration(night[stage.key]))]),
+};
+---
+
+<ChartPanel title="Sleep stages" note={note} legend={[...sleepStages]} table={table} empty={empty} isLead={isLead}>
+  <ColumnChart columns={columns} summary="Sleep stages per night" formatTick={(value) => `${value}h`} height={height} />
+</ChartPanel>

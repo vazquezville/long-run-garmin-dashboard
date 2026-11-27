@@ -1,0 +1,74 @@
+---
+import { overallPace, sum } from "../../lib/data/aggregate.ts";
+import type { Activity, Day, Night, Vo2Reading } from "../../lib/data/types.ts";
+import { formatClock, formatCount, formatDay, formatDuration, formatNumber, formatWeekday } from "../../lib/format.ts";
+import type { DateRange } from "../../lib/garmin/ranges.ts";
+import ActivityTable from "../activityTable.astro";
+import BatteryChart from "../metrics/batteryChart.astro";
+import RestingHrChart from "../metrics/restingHrChart.astro";
+import SleepStagesChart from "../metrics/sleepStagesChart.astro";
+import StepsChart from "../metrics/stepsChart.astro";
+import StressChart from "../metrics/stressChart.astro";
+import MonthCalendar from "../monthCalendar.astro";
+import EffortsPanel from "../panels/effortsPanel.astro";
+import SportsPanel from "../panels/sportsPanel.astro";
+import ZonesPanel from "../panels/zonesPanel.astro";
+import PageSection from "../pageSection.astro";
+import ResultsLine from "../resultsLine.astro";
+
+interface Props {
+  today: string;
+  // Whole month, including days still to come
+  calendar: DateRange;
+  // Month up to today
+  period: DateRange;
+  activities: Activity[];
+  days: Day[];
+  nights: Night[];
+  vo2: Vo2Reading[];
+}
+
+const { today, calendar, period, activities, days, nights, vo2 } = Astro.props;
+const runs = activities.filter((activity) => activity.sport === "run");
+const longest = runs.toSorted((a, b) => b.distanceKm - a.distanceKm)[0];
+const pace = overallPace(runs);
+const latestVo2 = vo2.at(-1);
+const hasWellness = days.some((day) => day.steps != null);
+
+// Older months have no watch data, so empty figures are left out
+const stats = [
+  { label: "Running distance", value: formatNumber(sum(runs.map((run) => run.distanceKm)), 1), unit: " km", detail: formatCount(runs.length, "run") },
+  { label: "Average running pace", value: formatClock(pace), unit: " /km" },
+  { label: "Active time", value: formatDuration(sum(activities.map((item) => item.durationSec))), detail: formatCount(activities.length, "activity") },
+  { label: "Longest run", value: formatNumber(longest?.distanceKm ?? null, 1), unit: " km", detail: longest && formatWeekday(longest.date) },
+  { label: "VO2 max", value: formatNumber(latestVo2?.value ?? null, 1), detail: latestVo2 && `Measured ${formatDay(latestVo2.date)}` },
+].filter((stat) => stat.value !== "–");
+---
+
+<ResultsLine stats={stats} />
+<MonthCalendar activities={activities} range={calendar} today={today} />
+<PageSection title="Body">
+  {hasWellness ? (
+    <div class="twoColumns">
+      <StepsChart days={days} />
+      <RestingHrChart days={days} />
+      <BatteryChart days={days} />
+      <StressChart days={days} />
+    </div>
+  ) : (
+    <p class="notice">The watch recorded no daily data this month, so there are no steps, heart rate or stress charts.</p>
+  )}
+  {nights.length > 0 && <SleepStagesChart nights={nights} range={period} />}
+</PageSection>
+{activities.length > 0 && (
+  <PageSection title="Effort">
+    <div class="threeColumns">
+      <ZonesPanel activities={activities} />
+      <SportsPanel activities={activities} />
+      <EffortsPanel activities={activities} />
+    </div>
+  </PageSection>
+)}
+<PageSection title="All activities">
+  <ActivityTable activities={activities} />
+</PageSection>

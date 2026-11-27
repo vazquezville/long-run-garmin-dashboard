@@ -1,0 +1,132 @@
+---
+import { formatMonthName } from "../lib/format.ts";
+import { monthInYear, yearsOf } from "../lib/periods.ts";
+
+interface Props {
+  kind: "month" | "year";
+  selected: string;
+  months: string[];
+}
+
+const { kind, selected, months } = Astro.props;
+const year = selected.slice(0, 4);
+const yearLinks = yearsOf(months).map((option) => ({
+  label: option,
+  href: kind === "year" ? `/year/${option}` : `/month/${monthInYear(months, option, selected.slice(5))}`,
+  isSelected: option === year,
+}));
+const monthLinks = Array.from({ length: 12 }, (_, index) => {
+  const id = `${year}-${String(index + 1).padStart(2, "0")}`;
+  return { id, label: formatMonthName(id), isAvailable: months.includes(id) };
+});
+---
+
+<nav aria-label={`Choose a ${kind}`}>
+  <ul class="years" aria-label="Year">
+    {yearLinks.map((link) => (
+      <li>
+        <a href={link.href} aria-current={link.isSelected ? "true" : undefined}>
+          {link.label}
+        </a>
+      </li>
+    ))}
+  </ul>
+  {kind === "month" && (
+    <ul class="months" aria-label="Month">
+      {monthLinks.map((month) => (
+        <li>
+          {month.isAvailable ? (
+            <a href={`/month/${month.id}`} aria-current={month.id === selected ? "page" : undefined}>
+              {month.label}
+            </a>
+          ) : (
+            <span title="No activities">{month.label}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</nav>
+
+<style>
+  /* Sits close to the title it changes */
+  nav {
+    display: grid;
+    gap: 8px;
+    margin-top: -12px;
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  a,
+  span {
+    display: block;
+    color: var(--textMuted);
+    font-size: 14px;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .years {
+    column-gap: 20px;
+  }
+
+  .years a {
+    padding: 4px 0;
+    border-bottom: 3px solid transparent;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .years a:hover {
+    color: var(--text);
+  }
+
+  .years a[aria-current] {
+    border-bottom-color: var(--accent);
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .months {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 4.5rem));
+    gap: 4px;
+  }
+
+  .months a,
+  .months span {
+    padding: 5px 0;
+    border-radius: 999px;
+  }
+
+  .months a {
+    color: var(--text);
+  }
+
+  .months a:hover {
+    background: var(--hover);
+  }
+
+  .months a[aria-current] {
+    background: var(--accent);
+    color: var(--surface);
+    font-weight: 700;
+  }
+
+  .months span {
+    opacity: 0.4;
+  }
+
+  @media (max-width: 640px) {
+    .months {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .years {
+      column-gap: 14px;
+    }
+  }
+</style>

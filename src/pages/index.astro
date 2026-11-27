@@ -1,0 +1,24 @@
+---
+import OverviewView from "../components/views/overviewView.astro";
+import DashboardLayout from "../layouts/dashboardLayout.astro";
+import { createSource } from "../lib/data/source.ts";
+import { rangeOptions } from "../lib/views.ts";
+
+const source = createSource();
+const [activities, days, vo2, fitnessAge] = await Promise.all([source.activities(), source.days(), source.vo2(), source.fitnessAge()]);
+---
+
+<DashboardLayout title="Training log" errors={[activities.error, days.error, vo2.error, fitnessAge.error]}>
+  {rangeOptions.map((range) => (
+    <div data-range-panel={range}>
+      <OverviewView
+        range={range}
+        today={source.today}
+        activities={activities.data ?? []}
+        days={days.data ?? []}
+        vo2={vo2.data ?? []}
+        fitnessAge={fitnessAge.data}
+      />
+    </div>
+  ))}
+</DashboardLayout>

@@ -1,0 +1,43 @@
+---
+import { defaultRange, rangeOptions } from "../lib/views.ts";
+---
+
+<div role="group" aria-label="Date range">
+  {rangeOptions.map((range) => (
+    <button type="button" data-range-option={range} aria-pressed={range === defaultRange ? "true" : "false"}>
+      {range} days
+    </button>
+  ))}
+</div>
+
+<style>
+  div {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  button {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--textMuted);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--hover);
+  }
+
+  button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--surface);
+    font-weight: 700;
+  }
+</style>

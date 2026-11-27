@@ -1,0 +1,136 @@
+---
+import { line } from "d3-shape";
+import { createAxis, type Point } from "../../lib/chart.ts";
+import { formatCompact } from "../../lib/format.ts";
+import ChartFrame from "./chartFrame.astro";
+
+interface Props {
+  points: Point[];
+  summary: string;
+  color: string;
+  domain?: [number, number];
+  // Puts smaller values on top, used for pace
+  isInverted?: boolean;
+  connectGaps?: boolean;
+  showLine?: boolean;
+  band?: { from: number; to: number } | undefined;
+  formatTick?: (value: number) => string;
+  height?: number;
+}
+
+const { points, summary, color, domain, isInverted = false, connectGaps = false, showLine = true, band, formatTick = formatCompact, height } = Astro.props;
+
+const values = points.flatMap((point) => (point.value == null ? [] : [point.value]));
+const bounds = band ? [...values, band.from, band.to] : values;
+const low = Math.min(...bounds);
+const high = Math.max(...bounds);
+// A flat series needs room to avoid a meaningless zoom
+const padding = high === low ? 5 : Math.max((high - low) * 0.1, 1);
+const axis = createAxis(domain?.[0] ?? Math.max(0, low - padding), domain?.[1] ?? high + padding);
+const place = (value: number) => (isInverted ? 100 - axis.position(value) : axis.position(value));
+const ticks = axis.ticks.map((value) => ({ position: place(value), label: formatTick(value) }));
+
+const plotted = points.map((point, index) => ({
+  ...point,
+  x: ((index + 0.5) / points.length) * 100,
+  y: point.value == null ? null : place(point.value),
+}));
+type Plotted = (typeof plotted)[number];
+
+const path = line<Plotted>()
+  .defined((point) => point.y != null)
+  .x((point) => point.x)
+  .y((point) => 100 - (point.y ?? 0))(connectGaps ? plotted.filter((point) => point.y != null) : plotted);
+
+const lastIndex = plotted.findLastIndex((point) => point.y != null);
+const isSparse = !showLine || values.length <= 31;
+// Lone readings would be invisible without a dot
+const isIsolated = (index: number) => plotted[index - 1]?.y == null && plotted[index + 1]?.y == null;
+const orderedBand = band && [place(band.from), place(band.to)].sort((a, b) => a - b);
+---
+
+<ChartFrame
+  labels={points.map((point) => point.label)}
+  ticks={ticks}
+  summary={summary}
+  height={height}
+  band={orderedBand && { from: orderedBand[0]!, to: orderedBand[1]! }}
+>
+  {showLine && path && (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <path d={path} style={`stroke: ${color}`} />
+    </svg>
+  )}
+  <div class="columns">
+    {plotted.map((point, index) => (
+      <div class="column" data-tip={JSON.stringify(point.tip)}>
+        {point.y != null && (
+          <span
+            class:list={["dot", { isHidden: !isSparse && index !== lastIndex && !isIsolated(index) }]}
+            style={`bottom: ${point.y}%; background: ${color}`}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+</ChartFrame>
+
+<style>
+  svg,
+  .columns {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  svg {
+    overflow: visible;
+  }
+
+  path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .columns {
+    display: flex;
+  }
+
+  .column {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .column.isActive::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: var(--textMuted);
+    content: "";
+  }
+
+  .dot {
+    position: absolute;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin: 0 0 -4px -4px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+
+  .isHidden {
+    opacity: 0;
+  }
+
+  .column.isActive .dot {
+    opacity: 1;
+  }
+</style>

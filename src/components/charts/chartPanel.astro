@@ -1,0 +1,52 @@
+---
+import type { LegendItem, TableData } from "../../lib/chart.ts";
+import EmptyState from "../emptyState.astro";
+import DataTable from "./dataTable.astro";
+
+interface Props {
+  title: string;
+  note?: string | undefined;
+  legend?: LegendItem[];
+  table?: TableData;
+  // Replaces the chart when there is nothing to draw
+  empty?: string | false | null | undefined;
+  // The protagonist of a page gets a larger title
+  isLead?: boolean;
+}
+
+const { title, note, legend, table, empty, isLead = false } = Astro.props;
+const Title = isLead ? "h2" : "h3";
+---
+
+<section class="block">
+  <Title>{title}</Title>
+  {note && !empty && <p class="muted">{note}</p>}
+  {empty ? (
+    <EmptyState message={empty} />
+  ) : (
+    <>
+      {legend && (
+        <ul class="legend">
+          {legend.map((item) => (
+            <li>
+              <span class="swatch" style={`--color: ${item.color}`} />
+              {item.label}
+            </li>
+          ))}
+        </ul>
+      )}
+      <slot />
+      {table && <DataTable table={table} />}
+    </>
+  )}
+</section>
+
+<style>
+  p {
+    font-size: 13px;
+  }
+
+  .legend {
+    margin-top: 8px;
+  }
+</style>

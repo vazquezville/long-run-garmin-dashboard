@@ -1,0 +1,35 @@
+---
+import { sum } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatDuration, formatNumber } from "../../lib/format.ts";
+import { sportOrder, sports } from "../../lib/sports.ts";
+import ChartPanel from "../charts/chartPanel.astro";
+import RankedBars from "../charts/rankedBars.astro";
+
+interface Props {
+  activities: Activity[];
+}
+
+const { activities } = Astro.props;
+const rows = sportOrder
+  .flatMap((sport) => {
+    const items = activities.filter((activity) => activity.sport === sport);
+    if (items.length === 0) return [];
+    const seconds = sum(items.map((item) => item.durationSec));
+    const distance = sum(items.map((item) => item.distanceKm));
+    return [
+      {
+        label: sports[sport].label,
+        detail: `${formatCount(items.length, "session")}${distance > 0 ? `, ${formatNumber(distance)} km` : ""}`,
+        value: seconds,
+        display: formatDuration(seconds),
+        color: sports[sport].color,
+      },
+    ];
+  })
+  .toSorted((a, b) => b.value - a.value);
+---
+
+<ChartPanel title="Sports" note="By time spent" empty={activities.length === 0 && "No activities in this period."}>
+  <RankedBars rows={rows} />
+</ChartPanel>

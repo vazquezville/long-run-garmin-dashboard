@@ -1,0 +1,62 @@
+---
+import { average, sum } from "../lib/data/aggregate.ts";
+import type { Activity, Day } from "../lib/data/types.ts";
+import { formatDuration, formatMonthTitle, formatNumber } from "../lib/format.ts";
+
+interface Props {
+  rows: Array<{ month: string; activities: Activity[]; days: Day[] }>;
+  // Months that have their own page
+  months: string[];
+}
+
+const { rows, months } = Astro.props;
+const table = rows.map(({ month, activities, days }) => {
+  const runs = activities.filter((activity) => activity.sport === "run");
+  const completed = days.filter((day) => !day.isToday);
+  return {
+    month,
+    hasPage: months.includes(month),
+    cells: [
+      formatNumber(activities.length),
+      formatNumber(runs.length),
+      formatNumber(sum(runs.map((run) => run.distanceKm)), 1),
+      formatDuration(sum(activities.map((activity) => activity.durationSec))),
+      formatNumber(average(completed.map((day) => day.steps))),
+      formatNumber(average(days.map((day) => day.restingHr))),
+    ],
+  };
+});
+---
+
+<section class="block">
+  <h3>Month by month</h3>
+  <div class="tableScroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Month</th>
+          <th scope="col">Activities</th>
+          <th scope="col">Runs</th>
+          <th scope="col">Run km</th>
+          <th scope="col">Active time</th>
+          <th scope="col">Daily steps</th>
+          <th scope="col">Resting HR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {table.map((row) => (
+          <tr>
+            <td>{row.hasPage ? <a href={`/month/${row.month}`}>{formatMonthTitle(row.month)}</a> : formatMonthTitle(row.month)}</td>
+            {row.cells.map((cell) => <td>{cell}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+  .tableScroll {
+    margin-top: 8px;
+  }
+</style>

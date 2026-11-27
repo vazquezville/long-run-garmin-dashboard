@@ -1,0 +1,25 @@
+---
+import LatestNight from "../components/latestNight.astro";
+import PageSection from "../components/pageSection.astro";
+import SleepView from "../components/views/sleepView.astro";
+import DashboardLayout from "../layouts/dashboardLayout.astro";
+import { createSource } from "../lib/data/source.ts";
+import { rangeOptions } from "../lib/views.ts";
+
+const source = createSource();
+const [nights, hrv, days] = await Promise.all([source.nights(), source.hrv(), source.days()]);
+const latest = nights.data?.at(-1);
+---
+
+<DashboardLayout title="Sleep and recovery" errors={[nights.error, hrv.error, days.error]}>
+  {rangeOptions.map((range) => (
+    <div data-range-panel={range}>
+      <SleepView range={range} today={source.today} nights={nights.data ?? []} hrv={hrv.data ?? []} days={days.data ?? []} />
+    </div>
+  ))}
+  {latest && (
+    <PageSection title="Last recorded night">
+      <LatestNight night={latest} />
+    </PageSection>
+  )}
+</DashboardLayout>

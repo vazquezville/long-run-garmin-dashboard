@@ -1,0 +1,237 @@
+---
+import { bucketByDate, sum, weekStart } from "../lib/data/aggregate.ts";
+import type { Activity } from "../lib/data/types.ts";
+import { formatDuration, formatNumber } from "../lib/format.ts";
+import { addDays, type DateRange } from "../lib/garmin/ranges.ts";
+import { dayTip, tipText } from "../lib/sessions.ts";
+import { sportOrder, sports } from "../lib/sports.ts";
+import SessionDiscs from "./sessionDiscs.astro";
+
+interface Props {
+  activities: Activity[];
+  // First to last day of the month
+  range: DateRange;
+  today: string;
+}
+
+const { activities, range, today } = Astro.props;
+const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const runKm = (items: Activity[]) => sum(items.filter((item) => item.sport === "run").map((item) => item.distanceKm));
+
+const calendar = { start: weekStart(range.start), end: addDays(weekStart(range.end), 6) };
+const weeks = bucketByDate(activities, calendar, "week").map((week) => ({
+  runKm: runKm(week.items),
+  seconds: sum(week.items.map((item) => item.durationSec)),
+  isFuture: week.start > today,
+  days: weekdays.map((_, index) => {
+    const date = addDays(week.start, index);
+    const done = week.items.filter((item) => item.date === date).toReversed();
+    const kilometers = runKm(done);
+    return {
+      date,
+      done,
+      number: Number(date.slice(8)),
+      isOutside: date < range.start || date > range.end,
+      isFuture: date > today,
+      isToday: date === today,
+      // Runs show distance, other days show time
+      caption: kilometers > 0 ? `${formatNumber(kilometers, 1)} km` : formatDuration(sum(done.map((item) => item.durationSec))),
+    };
+  }),
+}));
+
+const present = sportOrder.filter((sport) => activities.some((activity) => activity.sport === sport));
+---
+
+<section class="block" aria-label="Sessions by day">
+  <ul class="legend">
+    {present.map((sport) => (
+      <li>
+        <span class="swatch round" style={`--color: ${sports[sport].color}`} />
+        {sports[sport].label}
+      </li>
+    ))}
+    <li>Bigger circles are longer sessions</li>
+  </ul>
+  <div class="row head" aria-hidden="true">
+    {weekdays.map((weekday) => (
+      <span class="weekday">
+        {weekday.slice(0, 1)}<span class="suffix">{weekday.slice(1)}</span>
+      </span>
+    ))}
+    <span class="total">Run km</span>
+  </div>
+  {weeks.map((week) => (
+    <div class="row">
+      {week.days.map((day) => {
+        if (day.isOutside) return <div class="cell isOutside" />;
+        const tip = day.done.length > 0 ? dayTip(day.date, day.done) : undefined;
+        return (
+          <div
+            class:list={["cell", { isFuture: day.isFuture }]}
+            tabindex={tip ? "0" : undefined}
+            role={tip ? "img" : undefined}
+            aria-label={tip && tipText(tip)}
+            data-tip={tip && JSON.stringify(tip)}
+          >
+            <span class:list={["number", { isToday: day.isToday }]}>{day.number}</span>
+            <span class="discs">
+              <SessionDiscs activities={day.done} />
+            </span>
+            {tip && <span class="caption">{day.caption}</span>}
+          </div>
+        );
+      })}
+      <div class="total">
+        {!week.isFuture && (
+          <>
+            <strong>{formatNumber(week.runKm, 1)}</strong>
+            <span>{formatDuration(week.seconds)}</span>
+          </>
+        )}
+      </div>
+    </div>
+  ))}
+</section>
+
+<style>
+  .round {
+    border-radius: 50%;
+  }
+
+  .row {
+    --scale: 1.15;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 6.5rem;
+    border-top: 1px solid var(--grid);
+  }
+
+  .head {
+    margin-top: 12px;
+    padding-bottom: 4px;
+    border-top: 0;
+    color: var(--textMuted);
+    font-size: 12px;
+  }
+
+  .weekday {
+    padding-left: 8px;
+  }
+
+  .cell {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    justify-items: center;
+    min-width: 0;
+    min-height: 112px;
+    padding: 6px 2px;
+    border-left: 1px solid var(--grid);
+  }
+
+  .cell:first-child {
+    border-left: 0;
+  }
+
+  .cell.isActive {
+    background: var(--hover);
+  }
+
+  .number {
+    justify-self: start;
+    min-width: 22px;
+    margin-left: 4px;
+    border-radius: 11px;
+    color: var(--textMuted);
+    font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+  }
+
+  .isToday {
+    background: var(--accent);
+    color: var(--surface);
+    font-weight: 700;
+  }
+
+  .isFuture {
+    opacity: 0.45;
+  }
+
+  .discs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .caption {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .total {
+    display: grid;
+    align-content: center;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .row:not(.head) .total {
+    border-left: 1px solid var(--grid);
+  }
+
+  .total strong {
+    font-size: 1.6rem;
+    font-stretch: 115%;
+    font-weight: 750;
+  }
+
+  .total span {
+    color: var(--textMuted);
+    font-size: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .row {
+      --scale: 0.65;
+      grid-template-columns: repeat(7, minmax(0, 1fr)) 3.2rem;
+    }
+
+    .cell {
+      min-height: 64px;
+      padding-block: 4px;
+    }
+
+    .number {
+      margin-left: 1px;
+      font-size: 10px;
+    }
+
+    .caption {
+      display: none;
+    }
+
+    .weekday {
+      padding-left: 4px;
+    }
+
+    .total strong {
+      font-size: 0.95rem;
+    }
+
+    .total span {
+      display: none;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .row {
+      --scale: 0.5;
+      --overlap: -4px;
+    }
+
+    .suffix {
+      display: none;
+    }
+  }
+</style>

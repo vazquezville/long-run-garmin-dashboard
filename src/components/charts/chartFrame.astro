@@ -1,0 +1,125 @@
+---
+import { labelIndices } from "../../lib/chart.ts";
+
+interface Props {
+  labels: string[];
+  ticks: Array<{ position: number; label: string }>;
+  summary: string;
+  // Height of the goal line as a percentage
+  reference?: number | undefined;
+  band?: { from: number; to: number } | undefined;
+  height?: number;
+}
+
+const { labels, ticks, summary, reference, band, height = 160 } = Astro.props;
+// Short labels such as month names all fit
+const shown = labelIndices(labels.length, labels.every((label) => label.length <= 3) ? 12 : 7);
+---
+
+<div class="chart">
+  <div class="body" style={`height: ${height}px`}>
+    <div class="yAxis" aria-hidden="true">
+      {ticks.map((tick) => <span style={`bottom: ${tick.position}%`}>{tick.label}</span>)}
+    </div>
+    <div class="plot" tabindex="0" role="group" aria-label={`${summary}. Use the arrow keys to read each value.`} data-chart>
+      {ticks.map((tick) => <i class="gridLine" style={`bottom: ${tick.position}%`} />)}
+      {band && <i class="band" style={`bottom: ${band.from}%; height: ${band.to - band.from}%`} />}
+      <slot />
+      {reference != null && <i class="reference" style={`bottom: ${reference}%`} />}
+    </div>
+  </div>
+  <div class="xAxis" aria-hidden="true">
+    {shown.map((index, order) => {
+      const position = ((index + 0.5) / labels.length) * 100;
+      const edge = position > 96 ? "isEnd" : position < 4 ? "isStart" : "";
+      const isSecondary = (shown.length - 1 - order) % 2 === 1;
+      return (
+        <span class:list={[edge, { isSecondary }]} style={`left: ${position}%`}>
+          {labels[index]}
+        </span>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  .chart {
+    --gutter: 40px;
+    container-type: inline-size;
+    padding-top: 8px;
+    color: var(--textMuted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: var(--gutter) minmax(0, 1fr);
+  }
+
+  .yAxis,
+  .plot,
+  .xAxis {
+    position: relative;
+  }
+
+  .yAxis span {
+    position: absolute;
+    right: 8px;
+    translate: 0 50%;
+    line-height: 1;
+  }
+
+  .gridLine,
+  .reference,
+  .band {
+    position: absolute;
+    right: 0;
+    left: 0;
+  }
+
+  .gridLine {
+    height: 1px;
+    background: var(--grid);
+  }
+
+  .gridLine:first-of-type {
+    background: var(--axis);
+  }
+
+  .band {
+    background: var(--hover);
+  }
+
+  .reference {
+    z-index: 1;
+    border-top: 1px solid var(--text);
+    pointer-events: none;
+  }
+
+  .xAxis {
+    height: 20px;
+    margin-left: var(--gutter);
+  }
+
+  .xAxis span {
+    position: absolute;
+    top: 4px;
+    translate: -50% 0;
+    white-space: nowrap;
+  }
+
+  .xAxis .isEnd {
+    translate: -85% 0;
+  }
+
+  .xAxis .isStart {
+    translate: -15% 0;
+  }
+
+  @container (max-width: 480px) {
+    .xAxis .isSecondary {
+      display: none;
+    }
+  }
+</style>

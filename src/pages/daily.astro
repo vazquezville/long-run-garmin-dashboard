@@ -1,0 +1,17 @@
+---
+import DailyView from "../components/views/dailyView.astro";
+import DashboardLayout from "../layouts/dashboardLayout.astro";
+import { createSource } from "../lib/data/source.ts";
+import { rangeOptions } from "../lib/views.ts";
+
+const source = createSource();
+const days = await source.days();
+---
+
+<DashboardLayout title="Daily activity" errors={[days.error]}>
+  {rangeOptions.map((range) => (
+    <div data-range-panel={range}>
+      <DailyView range={range} today={source.today} days={days.data ?? []} />
+    </div>
+  ))}
+</DashboardLayout>

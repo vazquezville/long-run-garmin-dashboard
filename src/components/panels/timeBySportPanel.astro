@@ -1,0 +1,47 @@
+---
+import { sum } from "../../lib/data/aggregate.ts";
+import type { Activity, ActivityBucket } from "../../lib/data/types.ts";
+import { formatDuration } from "../../lib/format.ts";
+import { sportOrder, sports } from "../../lib/sports.ts";
+import ChartPanel from "../charts/chartPanel.astro";
+import ColumnChart from "../charts/columnChart.astro";
+
+interface Props {
+  title: string;
+  // Header of the first table column
+  unit: string;
+  buckets: ActivityBucket[];
+  height?: number;
+  isLead?: boolean;
+}
+
+const { title, unit, buckets, height, isLead = false } = Astro.props;
+const all = buckets.flatMap((bucket) => bucket.items);
+const present = sportOrder.filter((sport) => all.some((activity) => activity.sport === sport));
+const seconds = (items: Activity[]) => sum(items.map((item) => item.durationSec));
+const split = (bucket: ActivityBucket) => present.map((sport) => ({ sport, seconds: seconds(bucket.items.filter((item) => item.sport === sport)) }));
+
+const columns = buckets.map((bucket) => ({
+  label: bucket.label,
+  isMuted: bucket.isPartial,
+  segments: split(bucket).map((part) => ({ value: part.seconds / 3600, color: sports[part.sport].color })),
+  tip: {
+    title: bucket.title,
+    rows: [
+      ...split(bucket)
+        .filter((part) => part.seconds > 0)
+        .map((part) => ({ label: sports[part.sport].label, value: formatDuration(part.seconds), color: sports[part.sport].color })),
+      { label: "Total", value: formatDuration(seconds(bucket.items)) },
+    ],
+  },
+}));
+
+const table = {
+  head: [unit, ...present.map((sport) => sports[sport].label)],
+  rows: buckets.toReversed().map((bucket) => [bucket.label, ...split(bucket).map((part) => formatDuration(part.seconds))]),
+};
+---
+
+<ChartPanel title={title} isLead={isLead} legend={present.map((sport) => sports[sport])} table={table} empty={all.length === 0 && "No activities in this period."}>
+  <ColumnChart columns={columns} summary={`${title} by sport`} formatTick={(value) => `${value}h`} height={height} />
+</ChartPanel>

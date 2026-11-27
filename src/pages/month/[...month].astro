@@ -1,0 +1,42 @@
+---
+import type { GetStaticPaths } from "astro";
+import PeriodPicker from "../../components/periodPicker.astro";
+import PeriodSteps from "../../components/periodSteps.astro";
+import MonthView from "../../components/views/monthView.astro";
+import DashboardLayout from "../../layouts/dashboardLayout.astro";
+import { createSource } from "../../lib/data/source.ts";
+import { formatMonthTitle } from "../../lib/format.ts";
+import { monthRange, upTo } from "../../lib/periods.ts";
+
+export const getStaticPaths = (async () => {
+  const months = await createSource().months();
+  const page = (id: string, month: string | undefined) => ({ params: { month }, props: { id, months } });
+  // The bare /month address shows the current one
+  return [page(months.at(-1)!, undefined), ...months.map((id) => page(id, id))];
+}) satisfies GetStaticPaths;
+
+interface Props {
+  id: string;
+  months: string[];
+}
+
+const { id, months } = Astro.props;
+const source = createSource();
+const calendar = monthRange(id);
+const period = upTo(calendar, source.today);
+const [activities, days, nights, vo2] = await Promise.all([source.activities(period), source.days(period), source.nights(period), source.vo2(period)]);
+---
+
+<DashboardLayout title={formatMonthTitle(id)} errors={[activities.error, days.error, nights.error, vo2.error]} hasRange={false}>
+  <PeriodSteps slot="actions" kind="month" selected={id} months={months} />
+  <PeriodPicker kind="month" selected={id} months={months} />
+  <MonthView
+    today={source.today}
+    calendar={calendar}
+    period={period}
+    activities={activities.data ?? []}
+    days={days.data ?? []}
+    nights={nights.data ?? []}
+    vo2={vo2.data ?? []}
+  />
+</DashboardLayout>

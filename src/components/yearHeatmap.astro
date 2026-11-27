@@ -1,0 +1,177 @@
+---
+import { bucketByDate, sum, weekStart } from "../lib/data/aggregate.ts";
+import type { Activity } from "../lib/data/types.ts";
+import { formatCount, formatMonthName, formatWeekday } from "../lib/format.ts";
+import { addDays, type DateRange } from "../lib/garmin/ranges.ts";
+import { dayTip } from "../lib/sessions.ts";
+
+interface Props {
+  activities: Activity[];
+  // First to last day of the year
+  range: DateRange;
+  today: string;
+  // Months that have their own page
+  months: string[];
+}
+
+const { activities, range, today, months } = Astro.props;
+
+// Upper limit in minutes of each shade
+const levels = [
+  { limit: 45, label: "Up to 45m", color: "var(--zone1)" },
+  { limit: 90, label: "45m to 1h 30m", color: "var(--zone2)" },
+  { limit: 150, label: "1h 30m to 2h 30m", color: "var(--zone3)" },
+  { limit: Infinity, label: "Over 2h 30m", color: "var(--zone5)" },
+];
+
+const calendar = { start: weekStart(range.start), end: addDays(weekStart(range.end), 6) };
+const weeks = bucketByDate(activities, calendar, "week").map((week) => {
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(week.start, index);
+    const done = week.items.filter((item) => item.date === date).toReversed();
+    const minutes = sum(done.map((item) => item.durationSec)) / 60;
+    const isOutside = date < range.start || date > range.end;
+    const isFuture = date > today;
+    const tip = done.length > 0 ? dayTip(date, done) : { title: formatWeekday(date), rows: [{ label: "", value: "No activity" }] };
+    return {
+      date,
+      isOutside,
+      isFuture,
+      tip: isOutside || isFuture ? undefined : tip,
+      color: done.length > 0 ? levels.find((level) => minutes <= level.limit)!.color : undefined,
+      href: months.includes(date.slice(0, 7)) ? `/month/${date.slice(0, 7)}` : undefined,
+    };
+  });
+  const first = days.find((day) => !day.isOutside && day.date.endsWith("-01"));
+  return { days, month: first && formatMonthName(first.date.slice(0, 7)) };
+});
+const activeDays = new Set(activities.map((activity) => activity.date)).size;
+---
+
+<section class="block">
+  <h2>Every day of the year</h2>
+  <p class="muted">{formatCount(activeDays, "active day")}, darker or brighter squares mean more time. Select a day to open its month.</p>
+  <ul class="legend">
+    <li>
+      <span class="swatch" style="--color: var(--grid)" />
+      No activity
+    </li>
+    {levels.map((level) => (
+      <li>
+        <span class="swatch" style={`--color: ${level.color}`} />
+        {level.label}
+      </li>
+    ))}
+  </ul>
+  <div class="scroll">
+    <div class="map" tabindex="0" role="group" aria-label="Activity time per day. Use the arrow keys to read each day." data-chart>
+      <div class="weekdays" aria-hidden="true">
+        <span />
+        <span>Mon</span>
+        <span />
+        <span>Wed</span>
+        <span />
+        <span>Fri</span>
+        <span />
+        <span>Sun</span>
+      </div>
+      {weeks.map((week) => (
+        <div class="week">
+          <span class="month" aria-hidden="true">{week.month}</span>
+          {week.days.map((day) => {
+            const Cell = day.tip && day.href ? "a" : "i";
+            return (
+              <Cell
+                class:list={["cell", { isOutside: day.isOutside, isFuture: day.isFuture }]}
+                style={day.color && `background: ${day.color}`}
+                href={Cell === "a" ? day.href : undefined}
+                tabindex={Cell === "a" ? "-1" : undefined}
+                aria-label={Cell === "a" ? formatWeekday(day.date) : undefined}
+                data-tip={day.tip && JSON.stringify(day.tip)}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .legend {
+    margin-top: 10px;
+  }
+
+  .scroll {
+    margin-top: 12px;
+    padding: 2px;
+    overflow-x: auto;
+  }
+
+  .map {
+    display: flex;
+    gap: 3px;
+    min-width: 720px;
+  }
+
+  .weekdays,
+  .week {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 18px repeat(7, auto);
+    gap: 3px;
+    align-content: start;
+  }
+
+  .week {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .weekdays {
+    flex: none;
+    width: 30px;
+    grid-template-columns: auto;
+    grid-template-rows: 18px repeat(7, minmax(0, 1fr));
+    align-content: stretch;
+    color: var(--textMuted);
+  }
+
+  /* Labels must stay shorter than the smallest cell */
+  .weekdays span {
+    align-self: center;
+    font-size: 9px;
+    line-height: 1;
+  }
+
+  @media (min-width: 1000px) {
+    .weekdays span {
+      font-size: 11px;
+    }
+  }
+
+  .month {
+    color: var(--textMuted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .cell {
+    display: block;
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: var(--grid);
+  }
+
+  .cell.isActive {
+    outline: 2px solid var(--text);
+  }
+
+  .isFuture {
+    opacity: 0.4;
+  }
+
+  .isOutside {
+    visibility: hidden;
+  }
+</style>

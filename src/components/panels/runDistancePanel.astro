@@ -1,0 +1,35 @@
+---
+import { sum } from "../../lib/data/aggregate.ts";
+import type { ActivityBucket } from "../../lib/data/types.ts";
+import { formatNumber } from "../../lib/format.ts";
+import { sports } from "../../lib/sports.ts";
+import ChartPanel from "../charts/chartPanel.astro";
+import ColumnChart from "../charts/columnChart.astro";
+
+interface Props {
+  title: string;
+  // Header of the first table column
+  unit: string;
+  note: string;
+  buckets: ActivityBucket[];
+}
+
+const { title, unit, note, buckets } = Astro.props;
+const distances = buckets.map((bucket) => sum(bucket.items.filter((item) => item.sport === "run").map((item) => item.distanceKm)));
+
+const columns = buckets.map((bucket, index) => ({
+  label: bucket.label,
+  isMuted: bucket.isPartial,
+  segments: [{ value: distances[index]!, color: sports.run.color }],
+  tip: { title: bucket.title, rows: [{ label: "km run", value: formatNumber(distances[index]!, 1), color: sports.run.color }] },
+}));
+
+const table = {
+  head: [unit, "km"],
+  rows: buckets.map((bucket, index) => [bucket.label, formatNumber(distances[index]!, 1)]).toReversed(),
+};
+---
+
+<ChartPanel title={title} note={note} table={table} empty={distances.every((distance) => distance === 0) && "No runs in this period."}>
+  <ColumnChart columns={columns} summary={title} />
+</ChartPanel>
