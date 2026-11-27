@@ -134,7 +134,7 @@ const tableRows = activityMonths
       <LineChart points={vo2Points} summary="Weekly VO2 max" color="var(--fitness)" connectGaps />
     </ChartPanel>
   )}
-  <RunFormPanel activities={activities} />
+  <RunFormPanel activities={activities} period={period} />
   <MonthTable rows={tableRows} months={months} />
 </PageSection>
 <PageSection title="Body">

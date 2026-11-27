@@ -92,7 +92,7 @@ const noRuns = runs.length === 0 && "No runs in this period.";
       <LineChart points={pacePoints} summary="Pace of each run" color={sports.run.color} formatTick={formatClock} isInverted />
     </ChartPanel>
   </div>
-  <RunFormPanel activities={done} />
+  <RunFormPanel activities={done} period={period} />
 </PageSection>
 <PageSection title="Effort">
   <div class="threeColumns">
