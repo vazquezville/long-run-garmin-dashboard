@@ -2,7 +2,8 @@
 import { sum } from "../../lib/data/aggregate.ts";
 import type { RunDetail } from "../../lib/data/runDetail.ts";
 import type { Activity } from "../../lib/data/types.ts";
-import { formatClock, formatDuration, formatNumber } from "../../lib/format.ts";
+import { formatClock, formatNumber } from "../../lib/format.ts";
+import ZoneBars from "../zoneBars.astro";
 
 interface Props {
   run: Activity;
@@ -11,7 +12,6 @@ interface Props {
 
 const { run, detail } = Astro.props;
 const total = sum(run.zoneSec);
-const most = Math.max(...run.zoneSec, 1);
 const figures = [
   { label: "Training load", value: formatNumber(run.trainingLoad) },
   { label: "Aerobic effect, of 5", value: formatNumber(detail?.aerobicEffect ?? null, 1) },
@@ -37,16 +37,7 @@ const figures = [
     {total > 0 && (
       <>
         <h3 class="condensed">Time in heart rate zones</h3>
-        <ul>
-          {run.zoneSec.map((seconds, index) => (
-            <li>
-              <span>Zone {index + 1}</span>
-              <i><b style={`width: ${(seconds / most) * 100}%; background: var(--zone${index + 1})`} /></i>
-              <span>{formatDuration(seconds)}</span>
-              <span class="muted">{Math.round((seconds / total) * 100)}%</span>
-            </li>
-          ))}
-        </ul>
+        <ZoneBars seconds={run.zoneSec} />
       </>
     )}
   </div>
@@ -54,17 +45,6 @@ const figures = [
 )}
 
 <style>
-  /* One hue, darker as the effort rises */
-  ul {
-    --zone1: #ffcbb8;
-    --zone2: #ff9a75;
-    --zone3: #ff5a1f;
-    --zone4: #bd3500;
-    --zone5: #6b1e00;
-    display: grid;
-    gap: 8px;
-  }
-
   dl {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -85,25 +65,6 @@ const figures = [
   h3 {
     margin: 32px 0 12px;
     font-size: 30px;
-  }
-
-  li {
-    display: grid;
-    grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem 3rem;
-    align-items: center;
-    gap: 12px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  li span:nth-child(n + 3) {
-    text-align: right;
-  }
-
-  b {
-    display: block;
-    height: 22px;
-    border-radius: 0 4px 4px 0;
   }
 
   @media (max-width: 900px) {

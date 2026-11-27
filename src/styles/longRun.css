@@ -13,6 +13,12 @@
   --tempo: #c23600;
   --interval: #cc0050;
   --race: #000000;
+  /* One hue, darker as the effort rises */
+  --zone1: #ffcbb8;
+  --zone2: #ff9a75;
+  --zone3: #ff5a1f;
+  --zone4: #bd3500;
+  --zone5: #6b1e00;
   --sleepDeep: #6a35c9;
   --sleepLight: #2a8fe0;
   --sleepRem: #00a383;

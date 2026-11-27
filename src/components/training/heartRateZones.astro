@@ -1,0 +1,86 @@
+---
+import type { Activity, HeartRateZone } from "../../lib/data/types.ts";
+import { formatCount, formatDuration } from "../../lib/format.ts";
+import { intensitySplit, zoneTotals } from "../../lib/training.ts";
+import ZoneBars from "../zoneBars.astro";
+
+interface Props {
+  // Runs inside the period
+  runs: Activity[];
+  limits: HeartRateZone[];
+}
+
+const { runs, limits } = Astro.props;
+const measured = runs.filter((run) => run.zoneSec.some((seconds) => seconds > 0));
+const totals = zoneTotals(measured);
+const split = intensitySplit(totals);
+const colors = ["var(--zone2)", "var(--zone3)", "var(--zone4)"];
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Heart rate zones</h2>
+    {split.length === 0 ? (
+      <p class="muted">No runs with heart rate in this period.</p>
+    ) : (
+      <>
+        <p class="muted">Time from {measured.length} of {formatCount(runs.length, "run")}</p>
+        <dl>
+          {split.map((part) => (
+            <div>
+              <dt>{part.label}</dt>
+              <dd class="share condensed">{Math.round(part.share * 100)}%</dd>
+              <dd class="muted">{formatDuration(part.seconds)}, {part.zones.toLowerCase()}</dd>
+            </div>
+          ))}
+        </dl>
+        <div class="stack" aria-hidden="true">
+          {split.map((part, index) => part.seconds > 0 && <i style={`flex-grow: ${part.share}; background: ${colors[index]}`} />)}
+        </div>
+        <ZoneBars seconds={totals} limits={limits} />
+      </>
+    )}
+  </div>
+</section>
+
+<style>
+  p {
+    margin: -8px 0 16px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+    font-weight: 600;
+  }
+
+  /* The figure reads first, above its label */
+  .share {
+    order: -1;
+    font-size: clamp(48px, 7vw, 80px);
+  }
+
+  .muted {
+    font-weight: 400;
+  }
+
+  .stack {
+    display: flex;
+    gap: 2px;
+    height: 16px;
+    margin-bottom: 28px;
+    overflow: hidden;
+    border-radius: 4px;
+  }
+
+  .stack i {
+    flex-basis: 0;
+  }
+</style>

@@ -1,5 +1,4 @@
 ---
-import { within } from "../lib/data/aggregate.ts";
 import BodySection from "../components/health/bodySection.astro";
 import HealthHero from "../components/health/healthHero.astro";
 import OtherActivities from "../components/health/otherActivities.astro";
@@ -7,6 +6,7 @@ import SleepSection from "../components/health/sleepSection.astro";
 import MetricExplorer from "../components/metricExplorer.astro";
 import PeriodFilter from "../components/periodFilter.astro";
 import LongRunLayout from "../layouts/longRunLayout.astro";
+import { within } from "../lib/data/aggregate.ts";
 import { createSource } from "../lib/data/source.ts";
 import type { Day } from "../lib/data/types.ts";
 import { daysBetween } from "../lib/garmin/ranges.ts";

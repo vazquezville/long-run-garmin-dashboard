@@ -1,0 +1,73 @@
+---
+import type { Activity } from "../../lib/data/types.ts";
+import { formatDay, formatNumber } from "../../lib/format.ts";
+import { loadComparison, totalLoad } from "../../lib/training.ts";
+import type { Period } from "../../lib/trainingPeriod.ts";
+import WeeklyChart from "./weeklyChart.astro";
+
+interface Props {
+  // Every sport, since all of them tire the legs
+  activities: Activity[];
+  period: Period;
+  today: string;
+}
+
+const { activities, period, today } = Astro.props;
+const end = period.end < today ? period.end : today;
+const load = loadComparison(activities, end);
+const percent = load ? Math.round(load.change * 100) : 0;
+const verdict =
+  percent === 0 ? "the same load as" : `${formatNumber(Math.abs(percent))}% ${percent > 0 ? "more" : "less"} load than`;
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Training load</h2>
+    {load ? (
+      <>
+        <p class="muted">The 7 days to {formatDay(end)} carried {verdict} your weekly average of the 4 weeks to that day. All sports count.</p>
+        <dl>
+          <div>
+            <dt>Last 7 days</dt>
+            <dd class="condensed">{formatNumber(load.recent)}</dd>
+          </div>
+          <div>
+            <dt>Weekly average, 4 weeks</dt>
+            <dd class="condensed">{formatNumber(load.average)}</dd>
+          </div>
+          <div>
+            <dt>Difference</dt>
+            <dd class="condensed">{percent > 0 && "+"}{formatNumber(percent)}%</dd>
+          </div>
+        </dl>
+      </>
+    ) : (
+      <p class="muted">No training load recorded in the 4 weeks to {formatDay(end)}.</p>
+    )}
+    <WeeklyChart activities={activities} period={period} today={today} total={totalLoad} unit="load" noun="session" label="Weekly training load" />
+  </div>
+</section>
+
+<style>
+  p {
+    margin: -8px 0 16px;
+  }
+
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 56px;
+    margin-bottom: 24px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The figure reads first, above its label */
+  dd {
+    order: -1;
+    font-size: 56px;
+  }
+</style>

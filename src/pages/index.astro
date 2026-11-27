@@ -1,16 +1,19 @@
 ---
-import { within } from "../lib/data/aggregate.ts";
-import BestEfforts from "../components/training/bestEfforts.astro";
 import PeriodFilter from "../components/periodFilter.astro";
+import BestEfforts from "../components/training/bestEfforts.astro";
 import HealthBand from "../components/training/healthBand.astro";
+import HeartRateZones from "../components/training/heartRateZones.astro";
 import PeriodHero from "../components/training/periodHero.astro";
 import RunList from "../components/training/runList.astro";
 import RunningForm from "../components/training/runningForm.astro";
-import WeeklyDistance from "../components/training/weeklyDistance.astro";
+import TrainingLoad from "../components/training/trainingLoad.astro";
+import WeeklyChart from "../components/training/weeklyChart.astro";
 import LongRunLayout from "../layouts/longRunLayout.astro";
+import { sum, within } from "../lib/data/aggregate.ts";
 import { createSource } from "../lib/data/source.ts";
 import { addDays, daysBetween } from "../lib/garmin/ranges.ts";
 import { upTo } from "../lib/periods.ts";
+import { weeklyRange } from "../lib/training.ts";
 import { parsePeriod, periodHref } from "../lib/trainingPeriod.ts";
 
 // Daily data takes one request per month, so very long periods skip it
@@ -25,23 +28,34 @@ const first = runs.at(-1)?.date ?? today;
 const period = parsePeriod(Astro.url.searchParams, today, first);
 const elapsed = upTo(period, today);
 const hasHealth = daysBetween(period.start, period.end) < maxHealthDays;
-const [vo2, days, nights] = await Promise.all([
+const [vo2, zones, days, nights] = await Promise.all([
   // Reaches back 90 days so short periods still find a latest reading
   source.vo2({ start: [period.start, addDays(elapsed.end, -90)].sort()[0]!, end: elapsed.end }),
+  source.heartRateZones(),
   hasHealth ? source.days(elapsed) : null,
   hasHealth ? source.nights(elapsed) : null,
 ]);
 
 const selected = within(runs, period);
+const distance = (items: typeof runs) => sum(items.map((run) => run.distanceKm));
 ---
 
-<LongRunLayout title="Training" errors={[activities.error, vo2.error, days?.error, nights?.error]}>
+<LongRunLayout title="Training" errors={[activities.error, vo2.error, zones.error, days?.error, nights?.error]}>
   <Fragment slot="field">
     <PeriodFilter period={period} today={today} first={first} />
     <PeriodHero period={period} today={today} runs={selected} />
   </Fragment>
   <RunList runs={selected} />
-  <WeeklyDistance runs={runs} period={period} today={today} />
+  {weeklyRange(period, today) && (
+    <section class="band">
+      <div class="wrap">
+        <h2>Weekly distance</h2>
+        <WeeklyChart activities={runs} period={period} today={today} total={distance} unit="km" digits={1} noun="run" label="Weekly running distance" />
+      </div>
+    </section>
+  )}
+  <TrainingLoad activities={activities.data ?? []} period={period} today={today} />
+  <HeartRateZones runs={selected} limits={zones.data ?? []} />
   <RunningForm period={period} today={today} runs={selected} vo2={vo2.data ?? []} />
   <BestEfforts runs={selected} history={runs} isAllTime={period.mode === "all"} />
   <HealthBand href={periodHref(period, "/health")} health={hasHealth ? { days: days?.data ?? [], nights: nights?.data ?? [] } : null} />

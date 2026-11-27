@@ -17,7 +17,7 @@ While working on the code, use `pnpm dev` instead of step 4.
 
 | Page | Address | Content |
 | --- | --- | --- |
-| Training | `/` | Running by week, month, year, last X days or all time |
+| Training | `/` | Running by week, month, year, last X days or all time, with training load, heart rate zones, running form and records |
 | Runs | `/runs` | Every run, filtered by type, year, distance and name, sorted by date, distance, pace or load |
 | Run | `/run/<id>` | One run from the list: route, splits, charts along the distance, running form and heart rate zones |
 | Health | `/health` | Sleep, recovery, daily activity, body and other sports, for periods of up to a year |
@@ -48,6 +48,7 @@ Session types come from the activity name (long run, intervals, tempo, easy, rac
 - The first visit to an older period takes longer while it downloads.
 - Opening a run downloads its samples and GPS route, about 1 MB, and caches them like the rest.
 - Routes are drawn from the GPS points alone, with no map service.
+- Training load counts every sport, and compares 7 days with the weekly average of 4 weeks.
 - Sleep, heart rate, steps and stress appear on Training for periods of up to a year.
 - `.cache/` contains your health data. Do not publish it.
 - The server has no login. Keep it on your own machine.

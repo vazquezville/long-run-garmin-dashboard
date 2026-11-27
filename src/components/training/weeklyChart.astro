@@ -1,0 +1,122 @@
+---
+import { bucketByDate } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatDay, formatNumber } from "../../lib/format.ts";
+import { addDays } from "../../lib/garmin/ranges.ts";
+import { weeklyRange } from "../../lib/training.ts";
+import type { Period } from "../../lib/trainingPeriod.ts";
+
+interface Props {
+  // Whole history, since the chart also shows earlier weeks
+  activities: Activity[];
+  period: Period;
+  today: string;
+  // What each column adds up
+  total: (activities: Activity[]) => number;
+  unit: string;
+  digits?: number;
+  // Counted in the tooltip, such as run or session
+  noun: string;
+  label: string;
+}
+
+const { activities, period, today, total, unit, digits = 0, noun, label } = Astro.props;
+const range = weeklyRange(period, today);
+const weeks = (range ? bucketByDate(activities, range, "week") : []).map((week) => ({
+  start: week.start,
+  value: total(week.items),
+  count: week.items.length,
+  isSelected: addDays(week.start, 6) >= period.start && week.start <= period.end,
+}));
+const most = Math.max(...weeks.map((week) => week.value), 1);
+const every = Math.ceil(weeks.length / 8);
+---
+
+{weeks.length > 0 && (
+  <div class:list={["columns", { isDense: weeks.length > 24 }]} role="group" aria-label={`${label}, use the arrow keys to read each week`} tabindex="0" data-chart>
+    {weeks.map((week, index) => {
+      const fromEnd = weeks.length - 1 - index;
+      const tip = {
+        title: `Week of ${formatDay(week.start)}`,
+        rows: [{ label: unit, value: formatNumber(week.value, digits) }, { label: "", value: formatCount(week.count, noun) }],
+      };
+      return (
+        <div class:list={{ isSelected: week.isSelected }} data-tip={JSON.stringify(tip)}>
+          <span class="value">{Math.round(week.value)}</span>
+          <i style={`height: ${(week.value / most) * 180}px`} />
+          <span class:list={["tick", { isMinor: fromEnd % (every * 2) !== 0 }]}>{fromEnd % every === 0 ? formatDay(week.start) : ""}</span>
+        </div>
+      );
+    })}
+  </div>
+)}
+
+<style>
+  .columns {
+    display: flex;
+    gap: 8px;
+    height: 230px;
+  }
+
+  .columns.isDense {
+    gap: 3px;
+  }
+
+  .columns > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    min-width: 0;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  i {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    background: #c9c9c9;
+  }
+
+  .isSelected i {
+    background: var(--field);
+  }
+
+  .columns > :global(.isActive) i {
+    background: var(--ink);
+  }
+
+  .tick {
+    height: 18px;
+  }
+
+  .isDense .value {
+    display: none;
+  }
+
+  /* Edge labels stay inside narrow charts */
+  .isDense > div:first-child .tick {
+    align-self: flex-start;
+  }
+
+  .isDense > div:last-child .tick {
+    align-self: flex-end;
+  }
+
+  @media (max-width: 560px) {
+    .columns {
+      gap: 3px;
+    }
+
+    .value,
+    .tick.isMinor {
+      visibility: hidden;
+    }
+
+    .columns > div:last-child .tick {
+      align-self: flex-end;
+    }
+  }
+</style>

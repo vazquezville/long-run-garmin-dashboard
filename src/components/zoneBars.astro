@@ -1,0 +1,77 @@
+---
+import { sum } from "../lib/data/aggregate.ts";
+import type { HeartRateZone } from "../lib/data/types.ts";
+import { formatDuration } from "../lib/format.ts";
+
+interface Props {
+  // Time in zones one to five
+  seconds: number[];
+  // Heart rate limits, shown beside each zone when given
+  limits?: HeartRateZone[];
+}
+
+const { seconds, limits = [] } = Astro.props;
+const total = sum(seconds);
+const most = Math.max(...seconds, 1);
+const rows = seconds.map((time, index) => {
+  const limit = limits.find((item) => item.zone === index + 1);
+  return { zone: index + 1, time, range: limit && (limit.to ? `${limit.from} to ${limit.to} bpm` : `${limit.from} bpm and up`) };
+});
+---
+
+<ul>
+  {rows.map((row) => (
+    <li class:list={{ hasRange: limits.length > 0 }}>
+      <span>
+        Zone {row.zone}
+        {row.range && <small class="muted">{row.range}</small>}
+      </span>
+      <i><b style={`width: ${(row.time / most) * 100}%; background: var(--zone${row.zone})`} /></i>
+      <span>{formatDuration(row.time)}</span>
+      <span class="muted">{total > 0 ? Math.round((row.time / total) * 100) : 0}%</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  ul {
+    display: grid;
+    gap: 8px;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem 3rem;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  li.hasRange {
+    grid-template-columns: 8rem minmax(0, 1fr) 4.5rem 3rem;
+  }
+
+  small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  li > span:nth-child(n + 3) {
+    text-align: right;
+  }
+
+  b {
+    display: block;
+    height: 22px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  @media (max-width: 560px) {
+    li.hasRange {
+      grid-template-columns: 6.5rem minmax(0, 1fr) 3.5rem 2.5rem;
+      gap: 8px;
+    }
+  }
+</style>
