@@ -1,24 +1,48 @@
 ---
-import OverviewView from "../components/views/overviewView.astro";
-import DashboardLayout from "../layouts/dashboardLayout.astro";
+import BestEfforts from "../components/training/bestEfforts.astro";
+import HealthBand from "../components/training/healthBand.astro";
+import PeriodFilter from "../components/training/periodFilter.astro";
+import PeriodHero from "../components/training/periodHero.astro";
+import RunList from "../components/training/runList.astro";
+import RunningForm from "../components/training/runningForm.astro";
+import WeeklyDistance from "../components/training/weeklyDistance.astro";
+import LongRunLayout from "../layouts/longRunLayout.astro";
 import { createSource } from "../lib/data/source.ts";
-import { rangeOptions } from "../lib/views.ts";
+import { addDays, daysBetween } from "../lib/garmin/ranges.ts";
+import { upTo } from "../lib/periods.ts";
+import { parsePeriod } from "../lib/trainingPeriod.ts";
+import { within } from "../lib/views.ts";
+
+// Daily data takes one request per month, so very long periods skip it
+const maxHealthDays = 366;
 
 const source = createSource();
-const [activities, days, vo2, fitnessAge] = await Promise.all([source.activities(), source.days(), source.vo2(), source.fitnessAge()]);
+const { today } = source;
+// Loaded first because the oldest run bounds the all time period
+const activities = await source.allActivities();
+const runs = (activities.data ?? []).filter((activity) => activity.sport === "run");
+const first = runs.at(-1)?.date ?? today;
+const period = parsePeriod(Astro.url.searchParams, today, first);
+const elapsed = upTo(period, today);
+const hasHealth = daysBetween(period.start, period.end) < maxHealthDays;
+const [vo2, days, nights] = await Promise.all([
+  // Reaches back 90 days so short periods still find a latest reading
+  source.vo2({ start: [period.start, addDays(elapsed.end, -90)].sort()[0]!, end: elapsed.end }),
+  hasHealth ? source.days(elapsed) : null,
+  hasHealth ? source.nights(elapsed) : null,
+]);
+
+const selected = within(runs, period);
 ---
 
-<DashboardLayout title="Training log" errors={[activities.error, days.error, vo2.error, fitnessAge.error]}>
-  {rangeOptions.map((range) => (
-    <div data-range-panel={range}>
-      <OverviewView
-        range={range}
-        today={source.today}
-        activities={activities.data ?? []}
-        days={days.data ?? []}
-        vo2={vo2.data ?? []}
-        fitnessAge={fitnessAge.data}
-      />
-    </div>
-  ))}
-</DashboardLayout>
+<LongRunLayout title="Training" errors={[activities.error, vo2.error, days?.error, nights?.error]}>
+  <Fragment slot="field">
+    <PeriodFilter period={period} today={today} first={first} />
+    <PeriodHero period={period} today={today} runs={selected} />
+  </Fragment>
+  <RunList runs={selected} />
+  <WeeklyDistance runs={runs} period={period} today={today} />
+  <RunningForm period={period} today={today} runs={selected} vo2={vo2.data ?? []} />
+  <BestEfforts runs={selected} history={runs} isAllTime={period.mode === "all"} />
+  <HealthBand health={hasHealth ? { days: days?.data ?? [], nights: nights?.data ?? [] } : null} />
+</LongRunLayout>

@@ -1,5 +1,6 @@
 import { listDays, type DateRange } from "../garmin/ranges.ts";
 import type { RawActivity, RawDailySummary, RawFitnessAge, RawHeartRateZones, RawHrv, RawNight, RawVo2Max, RawWeightSummary } from "../garmin/rawTypes.ts";
+import { toSessionKind } from "../sessionKind.ts";
 import type { Activity, Day, FitnessAge, FitnessFactor, HeartRateZone, HrvReading, Night, Sport, Vo2Reading, WeightReading } from "./types.ts";
 
 const byDate = (a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date);
@@ -36,6 +37,7 @@ export function toActivities(raw: RawActivity[], range: DateRange): Activity[] {
         date: item.startTimeLocal.slice(0, 10),
         time: item.startTimeLocal.slice(11, 16),
         sport: toSport(item.activityType?.typeKey ?? ""),
+        kind: toSessionKind(item.activityName ?? "", item.trainingEffectLabel, item.eventType?.typeKey),
         distanceKm: (item.distance ?? 0) / 1000,
         durationSec: item.duration ?? 0,
         movingSec: item.movingDuration ?? item.duration ?? 0,
@@ -51,6 +53,7 @@ export function toActivities(raw: RawActivity[], range: DateRange): Activity[] {
           km5: positive(item.fastestSplit_5000),
           km10: positive(item.fastestSplit_10000),
           half: positive(item.fastestSplit_21098),
+          marathon: positive(item.fastestSplit_42195),
         },
         form: {
           cadence: toCadence(item.averageRunningCadenceInStepsPerMinute),

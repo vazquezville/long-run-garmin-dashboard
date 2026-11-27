@@ -1,3 +1,5 @@
+import type { SessionKind } from "../sessionKind.ts";
+
 export type Sport = "run" | "walk" | "strength" | "ride" | "swim" | "other";
 
 export interface Activity {
@@ -6,6 +8,8 @@ export interface Activity {
   date: string;
   time: string;
   sport: Sport;
+  // Type of running session, meaningful for runs only
+  kind: SessionKind;
   distanceKm: number;
   durationSec: number;
   movingSec: number;
@@ -16,7 +20,7 @@ export interface Activity {
   avgHr: number | null;
   trainingLoad: number | null;
   zoneSec: number[];
-  fastest: { km1: number | null; km5: number | null; km10: number | null; half: number | null };
+  fastest: { km1: number | null; km5: number | null; km10: number | null; half: number | null; marathon: number | null };
   form: {
     cadence: number | null;
     strideM: number | null;

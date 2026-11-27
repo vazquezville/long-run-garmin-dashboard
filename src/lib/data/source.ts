@@ -35,6 +35,13 @@ export function createSource(now: Date = new Date()) {
     lastTwoYears,
     months: async () => availableMonths((await api.activityHistory()).map((activity) => activity.startTimeLocal.slice(0, 10)), today),
     activities: (range: DateRange = recent) => load("activities", async () => toActivities(await api.activities(range), range)),
+    // Whole history, with the recent weeks refreshed more often
+    allActivities: () =>
+      load("activities", async () => {
+        const [history, latest] = await Promise.all([api.activityHistory(), api.activities(recent)]);
+        const older = history.filter((activity) => activity.startTimeLocal < recent.start);
+        return toActivities([...older, ...latest], { start: "2000-01-01", end: today });
+      }),
     days: (range: DateRange = recent) => load("daily summaries", async () => toDays(await api.dailySummaries(range), range, today)),
     nights: (range: DateRange = recent) => load("sleep", async () => toNights(await api.sleep(range), range)),
     hrv: (range: DateRange = recent) => load("heart rate variability", async () => toHrv(await api.hrv(range), range)),

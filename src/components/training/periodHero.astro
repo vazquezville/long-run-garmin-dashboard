@@ -1,0 +1,238 @@
+---
+import { overallPace, sum } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatClock, formatCount, formatDuration, formatNumber } from "../../lib/format.ts";
+import { sessionKinds } from "../../lib/sessionKind.ts";
+import { periodBuckets, periodName, type Period } from "../../lib/trainingPeriod.ts";
+import { within } from "../../lib/views.ts";
+
+interface Props {
+  period: Period;
+  today: string;
+  // Runs inside the period
+  runs: Activity[];
+}
+
+const { period, today, runs } = Astro.props;
+const distance = (items: Activity[]) => sum(items.map((run) => run.distanceKm));
+const km = distance(runs);
+const total = formatNumber(km, km >= 1000 ? 0 : 1);
+const name = periodName(period, today);
+const summary = runs.length
+  ? `${name}: ${formatCount(runs.length, "run")} in ${formatDuration(sum(runs.map((run) => run.movingSec)))}, at ${formatClock(overallPace(runs))} per km`
+  : `${name}: no runs`;
+
+const buckets = periodBuckets(period, today).map((bucket) => {
+  const items = within(runs, bucket);
+  return { ...bucket, items, km: distance(items) };
+});
+const most = Math.max(...buckets.map((bucket) => bucket.km), 1);
+// Short periods get values on every bar, long ones label every nth bar
+const isFew = buckets.length <= 14;
+const every = isFew ? 1 : Math.ceil(buckets.length / 8);
+---
+
+<div class="hero">
+  <div class="total">
+    <p class="giant condensed" style={`--chars: ${total.length}`}>{total}<small>km</small></p>
+    <p class="summary">{summary}</p>
+  </div>
+  <div
+    class:list={["bars", { isFew, isShort: buckets.length <= 7, isDense: buckets.length > 45 }]}
+    role="group"
+    aria-label="Running distance chart, use the arrow keys to read each bar"
+    tabindex="0"
+    data-chart
+  >
+    {buckets.map((bucket, index) => {
+      const fromEnd = buckets.length - 1 - index;
+      const only = period.mode === "week" && bucket.items.length === 1 ? bucket.items[0] : undefined;
+      const tip = {
+        title: bucket.title,
+        rows: bucket.isFuture
+          ? [{ label: "", value: "Still to come" }]
+          : [
+              { label: "km", value: formatNumber(bucket.km, 1) },
+              { label: bucket.items.length === 1 ? "run" : "runs", value: String(bucket.items.length) },
+            ],
+      };
+      return (
+        <div class="slot" data-tip={JSON.stringify(tip)}>
+          <div class="track">
+            {bucket.isFuture ? (
+              isFew && <span class="bar isFuture" />
+            ) : bucket.km > 0 ? (
+              <span class="bar" style={`height: max(22px, ${(bucket.km / most) * 100}%)`}>
+                {isFew && <b class="condensed">{formatNumber(bucket.km, bucket.km >= 100 ? 0 : 1)}</b>}
+                {only && <span class="kind">{sessionKinds[only.kind].label}</span>}
+              </span>
+            ) : (
+              <span class="bar isEmpty" />
+            )}
+          </div>
+          <span class:list={["tick", { isToday: isFew && bucket.isCurrent, isMinor: fromEnd % (every * 2) !== 0 }]}>
+            {fromEnd % every === 0 ? bucket.label : ""}
+          </span>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: end;
+    gap: 48px;
+    margin-top: 28px;
+  }
+
+  .total {
+    container-type: inline-size;
+  }
+
+  /* Shrinks as the number gets longer */
+  .giant {
+    font-size: min(250px, calc(100cqw / (var(--chars) * 0.44 + 0.45)));
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .giant small {
+    margin-left: 8px;
+    font-size: 0.28em;
+  }
+
+  .summary {
+    min-height: 58px;
+    margin-top: 14px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .bars {
+    display: flex;
+    gap: 3px;
+    height: 290px;
+    --radius: 2px;
+  }
+
+  .bars.isDense {
+    gap: 2px;
+  }
+
+  .bars.isFew {
+    gap: 8px;
+    --radius: 6px;
+  }
+
+  .slot {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .track {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+  }
+
+  .bar {
+    display: flex;
+    flex-direction: column;
+    min-height: 4px;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .bar b {
+    padding-top: 8px;
+    font-size: 22px;
+  }
+
+  .isShort .bar b {
+    font-size: 34px;
+  }
+
+  .kind {
+    font-size: 12px;
+  }
+
+  .bar.isEmpty {
+    height: 4px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .bar.isFuture {
+    height: 52px;
+    border: 2px dashed rgba(0, 0, 0, 0.35);
+    background: none;
+  }
+
+  :global(.slot.isActive) .bar:not(.isFuture) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .tick {
+    display: flex;
+    justify-content: center;
+    height: 22px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .tick.isToday {
+    border-radius: 99px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* Edge labels of long series stay inside the chart */
+  .bars:not(.isFew) .slot:first-child .tick {
+    justify-content: flex-start;
+  }
+
+  .bars:not(.isFew) .slot:last-child .tick {
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bars {
+      height: 220px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .bars.isFew {
+      gap: 3px;
+    }
+
+    .bar b,
+    .kind {
+      display: none;
+    }
+
+    .tick {
+      font-size: 11px;
+    }
+
+    .bars:not(.isFew) .tick.isMinor {
+      visibility: hidden;
+    }
+  }
+</style>

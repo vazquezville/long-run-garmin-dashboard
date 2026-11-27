@@ -1,0 +1,118 @@
+---
+import type { Activity } from "../../lib/data/types.ts";
+import { formatClock, formatCount, formatFullWeekday, formatNumber } from "../../lib/format.ts";
+import { sessionKinds, sessionName } from "../../lib/sessionKind.ts";
+
+interface Props {
+  // Newest first
+  runs: Activity[];
+}
+
+const { runs } = Astro.props;
+const shown = 5;
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Runs</h2>
+    {runs.length === 0 && <p class="muted">No runs in this period. Step back with the arrow or choose a longer range.</p>}
+    <ul>
+      {runs.map((run, index) => (
+        <li hidden={index >= shown}>
+          <span class="distance condensed">{formatNumber(run.distanceKm, 1)}</span>
+          <div>
+            <strong>{sessionName(run.name)}</strong>
+            <p class="muted">
+              <span class="kind" style={`color: ${sessionKinds[run.kind].color}`}>{sessionKinds[run.kind].label}</span>, {formatFullWeekday(run.date)}
+            </p>
+          </div>
+          <div>
+            <b class="condensed">{formatClock(run.paceSecPerKm)}</b>
+            <span class="muted">per km</span>
+          </div>
+          <div class="extra">
+            <b class="condensed">{formatNumber(run.avgHr)}</b>
+            <span class="muted">bpm</span>
+          </div>
+          <div class="extra">
+            <b class="condensed">{formatNumber(run.trainingLoad)}</b>
+            <span class="muted">load</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+    {runs.length > shown && (
+      <button type="button" aria-expanded="false" data-shown={shown} data-more={`Show all ${formatCount(runs.length, "run")}`}>
+        Show all {formatCount(runs.length, "run")}
+      </button>
+    )}
+  </div>
+</section>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>("[data-more]");
+  button?.addEventListener("click", () => {
+    const isOpen = button.getAttribute("aria-expanded") !== "true";
+    const items = button.parentElement!.querySelectorAll<HTMLLIElement>("li");
+    items.forEach((item, index) => (item.hidden = !isOpen && index >= Number(button.dataset.shown)));
+    button.setAttribute("aria-expanded", String(isOpen));
+    button.textContent = isOpen ? "Show fewer runs" : button.dataset.more!;
+  });
+</script>
+
+<style>
+  li {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) repeat(3, 100px);
+    align-items: center;
+    gap: 20px;
+    padding: 14px 0;
+    border-top: 2px solid var(--ink);
+  }
+
+  li[hidden] {
+    display: none;
+  }
+
+  .distance {
+    font-size: 54px;
+  }
+
+  strong {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+
+  .kind {
+    font-weight: 700;
+  }
+
+  b {
+    display: block;
+    font-size: 28px;
+  }
+
+  button {
+    margin-top: 14px;
+    padding: 10px 22px;
+    border: 0;
+    border-radius: 99px;
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 700;
+  }
+
+  @media (max-width: 900px) {
+    li {
+      grid-template-columns: 90px minmax(0, 1fr) 70px;
+    }
+
+    .extra {
+      display: none;
+    }
+
+    .distance {
+      font-size: 40px;
+    }
+  }
+</style>

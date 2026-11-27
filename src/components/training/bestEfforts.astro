@@ -1,0 +1,113 @@
+---
+import { bestEffort, type Effort } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatClock, formatFullDate, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  // Runs inside the period
+  runs: Activity[];
+  // Whole history, where the records come from
+  history: Activity[];
+  isAllTime: boolean;
+}
+
+const { runs, history, isAllTime } = Astro.props;
+const efforts: Array<[Effort, string]> = [
+  ["km1", "1 km"],
+  ["km5", "5 km"],
+  ["km10", "10 km"],
+  ["half", "Half marathon"],
+  ["marathon", "Marathon"],
+];
+// Some runs lack split times, which limits what the records cover
+const timed = history.filter((run) => Object.values(run.fastest).some((seconds) => seconds != null)).length;
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Best efforts</h2>
+    {timed < history.length && (
+      <p class="note muted">
+        Garmin timed these distances in {formatNumber(timed)} of {formatNumber(history.length)} runs, and only those count.
+      </p>
+    )}
+    <ul>
+      {efforts.map(([effort, label]) => {
+        const best = bestEffort(runs, effort);
+        const record = bestEffort(history, effort);
+        const isRecord = best != null && best.seconds === record?.seconds;
+        return (
+          <li>
+            <b class="condensed">{formatClock(best?.seconds ?? null)}</b>
+            {label}
+            <span>{best ? formatFullDate(best.date) : "Not recorded"}</span>
+            {!isAllTime && record && (
+              <p class:list={{ isRecord }}>
+                {isRecord ? "Your all-time record" : `Record ${formatClock(record.seconds)}`}
+                {!isRecord && <span>{formatFullDate(record.date)}</span>}
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  ul {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  li {
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    container-type: inline-size;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  b,
+  span {
+    display: block;
+  }
+
+  /* Long times shrink to stay inside the card */
+  b {
+    font-size: min(62px, 32cqw);
+  }
+
+  span {
+    color: #bdbdbd;
+  }
+
+  .note {
+    margin: -8px 0 16px;
+  }
+
+  li p {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid #3d3d3d;
+    font-weight: 600;
+  }
+
+  li p.isRecord {
+    color: var(--field);
+  }
+
+  @media (max-width: 900px) {
+    ul {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* The marathon takes the whole last row */
+    li:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

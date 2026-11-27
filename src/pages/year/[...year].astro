@@ -1,5 +1,4 @@
 ---
-import type { GetStaticPaths } from "astro";
 import PeriodPicker from "../../components/periodPicker.astro";
 import PeriodSteps from "../../components/periodSteps.astro";
 import YearView from "../../components/views/yearView.astro";
@@ -7,21 +6,12 @@ import DashboardLayout from "../../layouts/dashboardLayout.astro";
 import { createSource } from "../../lib/data/source.ts";
 import { upTo, yearRange, yearsOf } from "../../lib/periods.ts";
 
-export const getStaticPaths = (async () => {
-  const months = await createSource().months();
-  const years = yearsOf(months);
-  const page = (id: string, year: string | undefined) => ({ params: { year }, props: { id, months } });
-  // The bare /year address shows the current one
-  return [page(years.at(-1)!, undefined), ...years.map((id) => page(id, id))];
-}) satisfies GetStaticPaths;
-
-interface Props {
-  id: string;
-  months: string[];
-}
-
-const { id, months } = Astro.props;
 const source = createSource();
+const months = await source.months();
+const years = yearsOf(months);
+// The bare /year address shows the current one
+const id = Astro.params.year ?? years.at(-1)!;
+if (!years.includes(id)) return new Response("Year not found", { status: 404 });
 const calendar = yearRange(id);
 const period = upTo(calendar, source.today);
 const [activities, days, nights, vo2] = await Promise.all([source.activities(period), source.days(period), source.nights(period), source.vo2(period)]);

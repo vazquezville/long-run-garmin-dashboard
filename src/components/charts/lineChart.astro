@@ -14,11 +14,13 @@ interface Props {
   connectGaps?: boolean;
   showLine?: boolean;
   band?: { from: number; to: number } | undefined;
+  // Value of a horizontal line, such as an average
+  reference?: number;
   formatTick?: (value: number) => string;
   height?: number;
 }
 
-const { points, summary, color, domain, isInverted = false, connectGaps = false, showLine = true, band, formatTick = formatCompact, height } = Astro.props;
+const { points, summary, color, domain, isInverted = false, connectGaps = false, showLine = true, band, reference, formatTick = formatCompact, height } = Astro.props;
 
 const values = points.flatMap((point) => (point.value == null ? [] : [point.value]));
 const bounds = band ? [...values, band.from, band.to] : values;
@@ -55,6 +57,7 @@ const orderedBand = band && [place(band.from), place(band.to)].sort((a, b) => a 
   summary={summary}
   height={height}
   band={orderedBand && { from: orderedBand[0]!, to: orderedBand[1]! }}
+  reference={reference == null ? undefined : place(reference)}
 >
   {showLine && path && (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

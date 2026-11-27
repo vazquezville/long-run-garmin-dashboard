@@ -1,0 +1,39 @@
+---
+import { periodHref, type Period } from "../../lib/trainingPeriod.ts";
+
+interface Props {
+  // Null when there is nothing further that way
+  target: Period | null;
+  direction: "prev" | "next";
+}
+
+const { target, direction } = Astro.props;
+const arrow = direction === "prev" ? "‹" : "›";
+const label = target && `${direction === "prev" ? "Previous" : "Next"} ${target.mode}`;
+---
+
+{target ? (
+  <a href={periodHref(target)} rel={direction} aria-label={label}>{arrow}</a>
+) : (
+  <span aria-hidden="true">{arrow}</span>
+)}
+
+<style>
+  a,
+  span {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  span {
+    opacity: 0.3;
+  }
+</style>

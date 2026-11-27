@@ -1,30 +1,38 @@
-# Logbook
+# Long Run
 
-Personal dashboard for Garmin Connect data, built with Astro.
+Personal running dashboard for Garmin Connect data, built with Astro.
 
 ## Setup
 
 1. Create a Personal API key at <https://connect.garmin.com/app/settings/personalApiToken>.
 2. Add it to `.env` as `GARMIN_API_KEY=your-key`.
-3. Run `pnpm install` and `pnpm dev`, then open <http://localhost:4321>.
+3. Run `pnpm install`.
+4. Run `pnpm build`, then `pnpm start`, and open <http://localhost:4321>.
+
+While working on the code, use `pnpm dev` instead of step 4.
 
 ## Pages
 
 | Page | Content |
 | --- | --- |
-| Overview, Activities, Daily, Sleep | The last 7, 28 or 90 days |
+| Training | Running by week, month, year, last X days or all time |
+| Activities, Daily, Sleep | The last 7, 28 or 90 days |
 | Month | Any month with activities, as a calendar with its charts |
 | Year | Any year with activities, with a day by day map and monthly totals |
 | Fitness | Long term fitness and body trends |
+
+The address keeps the Training period, such as `/?week=2026-11-23`, `/?month=2026-04`, `/?year=2026`, `/?days=45` or `/?all`.
+
+Session types come from the activity name (long run, intervals, tempo, easy, race) and otherwise from Garmin's training label.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `pnpm dev` | Local server that reloads data from the cache or the API |
+| `pnpm dev` | Local server that reloads when the code changes |
 | `pnpm astro dev stop` | Stops the server when it runs in the background |
-| `pnpm build` | Static snapshot in `dist/` |
-| `pnpm preview` | Serves the snapshot |
+| `pnpm build` | Builds the server into `dist/` |
+| `pnpm start` | Runs the built server, from the project folder |
 | `pnpm probe` | Calls every endpoint and prints the shape of each response |
 | `pnpm refresh` | Deletes the local cache |
 | `pnpm test` | Unit tests |
@@ -33,8 +41,10 @@ Personal dashboard for Garmin Connect data, built with Astro.
 ## Data
 
 - The key is only read on the server and never reaches the browser.
+- Pages are built on each visit, so `dist/` holds code only.
 - Data is cached in `.cache/`: 30 minutes for the last week, 7 days up to three months old and 30 days beyond.
-- The list of available months refreshes once a day.
-- `pnpm build` creates a page for every month and year, so the first one takes a couple of minutes.
-- `.cache/` and `dist/` contain your health data. Do not publish them.
-- Publishing the dashboard needs a server adapter and a login first.
+- The full activity history refreshes once a day, and the last 90 days follow the rules above.
+- The first visit to an older period takes longer while it downloads.
+- Sleep, heart rate, steps and stress appear on Training for periods of up to a year.
+- `.cache/` contains your health data. Do not publish it.
+- The server has no login. Keep it on your own machine.

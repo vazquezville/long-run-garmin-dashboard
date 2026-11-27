@@ -1,0 +1,264 @@
+---
+import { formatFullDate, formatMonthTitle } from "../../lib/format.ts";
+import {
+  adjacentPeriod,
+  allTimePeriod,
+  anchorOf,
+  calendarPeriod,
+  dayCountShortcuts,
+  defaultDayCount,
+  lastDaysPeriod,
+  maxDayCount,
+  periodHref,
+  weekName,
+  type Period,
+} from "../../lib/trainingPeriod.ts";
+import PeriodArrow from "./periodArrow.astro";
+
+interface Props {
+  period: Period;
+  today: string;
+  // Date of the oldest run, nothing earlier is worth browsing
+  first: string;
+}
+
+const { period, today, first } = Astro.props;
+const anchor = anchorOf(period, today);
+const modes = [
+  { label: "Week", target: period.mode === "week" ? period : calendarPeriod("week", anchor) },
+  { label: "Month", target: period.mode === "month" ? period : calendarPeriod("month", anchor) },
+  { label: "Year", target: period.mode === "year" ? period : calendarPeriod("year", anchor) },
+  { label: "Last days", target: period.mode === "days" ? period : lastDaysPeriod(defaultDayCount, today) },
+  { label: "All time", target: allTimePeriod(first, today) },
+];
+
+const previous = period.start > first ? adjacentPeriod(period, -1, today) : null;
+const next = adjacentPeriod(period, 1, today);
+
+// Newest first, back to the oldest run
+const options: Period[] = [];
+if (period.mode === "month" || period.mode === "year") {
+  for (let option: Period | null = calendarPeriod(period.mode, today); option && option.end >= first; option = adjacentPeriod(option, -1, today)) {
+    options.push(option);
+  }
+  if (!options.some((option) => option.id === period.id)) options.push(period);
+}
+---
+
+<div class="filter">
+  <nav class="modes" aria-label="Period">
+    {modes.map(({ label, target }) => (
+      <a class="condensed" href={periodHref(target)} aria-current={target.mode === period.mode ? "true" : undefined}>
+        {label}
+      </a>
+    ))}
+  </nav>
+
+  <form class="control" action="/" method="get" autocomplete="off" data-period-form>
+    {period.mode === "days" ? (
+      <>
+        {dayCountShortcuts.map((count) => (
+          <a class="chip" href={`/?days=${count}`} aria-current={period.id === String(count) ? "true" : undefined}>
+            {count}
+          </a>
+        ))}
+        <label class="count">
+          Last <input class="condensed" type="number" name="days" min="1" max={maxDayCount} value={period.id} required /> days
+        </label>
+        <input class="slider" type="range" min="1" max="365" value={Math.min(Number(period.id), 365)} aria-label="Number of days slider" data-day-slider />
+      </>
+    ) : period.mode === "all" ? (
+      <p class="since">Since {formatFullDate(period.start)}</p>
+    ) : (
+      <>
+        <PeriodArrow target={previous} direction="prev" />
+        {period.mode === "week" ? (
+          <span class="weekPick">
+            <button class="pick" type="button" title="Jump to a date" data-open-picker>{weekName(period)}</button>
+            <input type="date" name="week" min={first} max={today} value={anchor} tabindex="-1" aria-label="Jump to a date" />
+          </span>
+        ) : (
+          <select class="pick" name={period.mode} aria-label={`Choose a ${period.mode}`}>
+            {options.map((option) => (
+              <option value={option.id} selected={option.id === period.id}>
+                {option.mode === "month" ? formatMonthTitle(option.id) : option.id}
+              </option>
+            ))}
+          </select>
+        )}
+        <PeriodArrow target={next} direction="next" />
+      </>
+    )}
+  </form>
+</div>
+
+<script>
+  for (const form of document.querySelectorAll<HTMLFormElement>("[data-period-form]")) {
+    const date = form.querySelector<HTMLInputElement>("input[type=date]");
+    const count = form.querySelector<HTMLInputElement>("input[name=days]");
+    const slider = form.querySelector<HTMLInputElement>("[data-day-slider]");
+    form.querySelector("[data-open-picker]")?.addEventListener("click", () => date?.showPicker());
+    slider?.addEventListener("input", () => {
+      if (count) count.value = slider.value;
+    });
+    // Picking a value applies it right away
+    form.addEventListener("change", () => {
+      if (form.reportValidity()) form.requestSubmit();
+    });
+  }
+</script>
+
+<style>
+  .filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 28px;
+    min-height: 84px;
+    margin-top: 22px;
+    padding: 14px 0;
+    border-block: 3px solid var(--ink);
+  }
+
+  .modes,
+  .control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .modes {
+    gap: 4px;
+  }
+
+  .control {
+    gap: 10px;
+    margin: 0 0 0 auto;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  .modes a {
+    padding: 8px 14px 10px;
+    border-radius: 6px;
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .modes a:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .modes a[aria-current] {
+    background: var(--ink);
+    color: var(--field);
+  }
+
+  .pick {
+    min-width: 210px;
+    height: 44px;
+    padding: 0 16px;
+    border: 2.5px solid var(--ink);
+    border-radius: 99px;
+    background: transparent;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  option {
+    background: var(--paper);
+  }
+
+  .weekPick {
+    position: relative;
+  }
+
+  .weekPick .pick {
+    min-width: 250px;
+  }
+
+  /* Hidden, it only anchors the native calendar */
+  .weekPick input {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .chip {
+    display: grid;
+    min-width: 40px;
+    height: 36px;
+    padding: 0 14px;
+    place-items: center;
+    border: 1.5px solid rgba(0, 0, 0, 0.4);
+    border-radius: 99px;
+    font-weight: 700;
+  }
+
+  .chip[aria-current] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .count {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-weight: 700;
+  }
+
+  .count input {
+    width: 104px;
+    border: 0;
+    border-bottom: 3px solid var(--ink);
+    background: transparent;
+    appearance: textfield;
+    font-size: 40px;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .count input::-webkit-inner-spin-button {
+    appearance: none;
+  }
+
+  .since {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .slider {
+    width: 130px;
+    accent-color: var(--ink);
+  }
+
+  @media (max-width: 900px) {
+    .control {
+      margin-left: 0;
+    }
+
+    .modes a {
+      padding: 7px 10px;
+      font-size: 24px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .slider {
+      display: none;
+    }
+
+    .modes a {
+      padding: 8px 7px;
+      font-size: 20px;
+    }
+  }
+</style>

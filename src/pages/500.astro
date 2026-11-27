@@ -1,0 +1,15 @@
+---
+import LongRunLayout from "../layouts/longRunLayout.astro";
+import { GarminAuthError } from "../lib/garmin/client.ts";
+
+interface Props {
+  error?: unknown;
+}
+
+// Only the API key message is safe and useful enough to show
+const { error } = Astro.props;
+const message =
+  error instanceof GarminAuthError ? error.message : "The page couldn't load. Check the server log, then reload to try again.";
+---
+
+<LongRunLayout title="Error" errors={[message]} />

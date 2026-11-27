@@ -37,6 +37,8 @@ function formatDateWith(date: string, options: Intl.DateTimeFormatOptions): stri
 export const formatDay = (date: string) => formatDateWith(date, { month: "short", day: "numeric" });
 export const formatWeekday = (date: string) => formatDateWith(date, { weekday: "short", month: "short", day: "numeric" });
 export const formatFullDate = (date: string) => formatDateWith(date, { month: "short", day: "numeric", year: "numeric" });
+export const formatFullWeekday = (date: string) => formatDateWith(date, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+export const formatWeekdayName = (date: string) => formatDateWith(date, { weekday: "short" });
 export const formatMonth = (date: string) => `${formatDateWith(date, { month: "short" })} ’${date.slice(2, 4)}`;
 
 export const formatMonthName = (month: string) => formatDateWith(`${month}-01`, { month: "short" });

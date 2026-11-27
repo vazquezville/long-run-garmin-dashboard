@@ -1,0 +1,131 @@
+@import "@fontsource/big-shoulders-display/900";
+
+:root {
+  color-scheme: light;
+  --field: #ff5a1f;
+  --ink: #000000;
+  --paper: #ffffff;
+  --muted: #5c5c5c;
+  --quiet: #f1f1f1;
+  --line: #dddddd;
+  --easy: #1463e8;
+  --long: #6a35c9;
+  --tempo: #c23600;
+  --interval: #cc0050;
+  --race: #000000;
+  --condensed: "Big Shoulders Display", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Figtree Variable", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+h2,
+p,
+ul,
+dl,
+dd {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Huge condensed numbers and headings, as on a race bib */
+.condensed,
+h2 {
+  font-family: var(--condensed);
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+h2 {
+  margin-bottom: 18px;
+  font-size: 44px;
+}
+
+.wrap {
+  width: min(1200px, 100%);
+  margin-inline: auto;
+  padding-inline: 32px;
+}
+
+.band {
+  padding: 40px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--paper);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 6px 20px rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.tooltip[hidden] {
+  display: none;
+}
+
+.tooltipTitle {
+  color: var(--muted);
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.tooltipRow strong {
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .wrap {
+    padding-inline: 16px;
+  }
+}

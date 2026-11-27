@@ -6,6 +6,8 @@ export interface RawActivity {
   activityName?: Maybe<string>;
   startTimeLocal: string;
   activityType?: Maybe<{ typeKey?: string }>;
+  eventType?: Maybe<{ typeKey?: string }>;
+  trainingEffectLabel?: Maybe<string>;
   distance?: Maybe<number>;
   duration?: Maybe<number>;
   movingDuration?: Maybe<number>;
@@ -24,6 +26,7 @@ export interface RawActivity {
   fastestSplit_5000?: Maybe<number>;
   fastestSplit_10000?: Maybe<number>;
   fastestSplit_21098?: Maybe<number>;
+  fastestSplit_42195?: Maybe<number>;
   averageRunningCadenceInStepsPerMinute?: Maybe<number>;
   avgStrideLength?: Maybe<number>;
   avgGroundContactTime?: Maybe<number>;

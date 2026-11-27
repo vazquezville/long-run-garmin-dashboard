@@ -1,0 +1,66 @@
+---
+import { average } from "../../lib/data/aggregate.ts";
+import type { Day, Night } from "../../lib/data/types.ts";
+import { formatDuration, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  // Left out when the period is too long to load daily data
+  health: { days: Day[]; nights: Night[] } | null;
+}
+
+const { health } = Astro.props;
+const finished = health?.days.filter((day) => !day.isToday) ?? [];
+const resting = average(health?.days.map((day) => day.restingHr) ?? []);
+const figures = [
+  { label: "Sleep", value: formatDuration(average(health?.nights.map((night) => night.totalSec) ?? [])) },
+  { label: "Resting heart rate", value: resting == null ? "–" : `${formatNumber(resting)} bpm` },
+  { label: "Daily steps", value: formatNumber(average(finished.map((day) => day.steps))) },
+  { label: "Stress", value: formatNumber(average(finished.map((day) => day.stress))) },
+];
+---
+
+<section>
+  <div class="wrap">
+    <p><a href="/daily">Health</a>, same period</p>
+    {health ? (
+      <dl>
+        {figures.map((figure) => (
+          <div>
+            <dt>{figure.label}</dt>
+            <dd>{figure.value}</dd>
+          </div>
+        ))}
+      </dl>
+    ) : (
+      <p>Choose a period of up to a year to see sleep, heart rate, steps and stress.</p>
+    )}
+  </div>
+</section>
+
+<style>
+  section {
+    padding: 24px 0;
+    background: var(--quiet);
+    color: #555555;
+  }
+
+  .wrap,
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 36px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The figure reads first, above its label */
+  dd {
+    order: -1;
+    color: var(--ink);
+    font-size: 19px;
+    font-weight: 800;
+  }
+</style>

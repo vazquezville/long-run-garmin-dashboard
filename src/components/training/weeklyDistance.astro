@@ -1,0 +1,131 @@
+---
+import { bucketByDate, sum, weekStart } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatDay, formatNumber } from "../../lib/format.ts";
+import { addDays, daysBetween } from "../../lib/garmin/ranges.ts";
+import type { Period } from "../../lib/trainingPeriod.ts";
+
+interface Props {
+  // Whole history, since the chart also shows earlier weeks
+  runs: Activity[];
+  period: Period;
+  today: string;
+}
+
+const { runs, period, today } = Astro.props;
+const minWeeks = 16;
+const maxWeeks = 60;
+
+// Weeks before the selection give it context
+const lastWeek = weekStart(period.end < today ? period.end : today);
+const count = Math.max(minWeeks, daysBetween(weekStart(period.start), lastWeek) / 7 + 1);
+const range = { start: addDays(lastWeek, -7 * (count - 1)), end: addDays(lastWeek, 6) };
+const weeks = count > maxWeeks ? [] : bucketByDate(runs, range, "week").map((week) => ({
+  start: week.start,
+  km: sum(week.items.map((run) => run.distanceKm)),
+  runs: week.items.length,
+  isSelected: addDays(week.start, 6) >= period.start && week.start <= period.end,
+}));
+const most = Math.max(...weeks.map((week) => week.km), 1);
+const every = Math.ceil(weeks.length / 8);
+---
+
+{weeks.length > 0 && (
+  <section class="band">
+    <div class="wrap">
+      <h2>Weekly distance</h2>
+      <div
+        class:list={["columns", { isDense: weeks.length > 24 }]}
+        role="group"
+        aria-label="Weekly running distance, use the arrow keys to read each week"
+        tabindex="0"
+        data-chart
+      >
+        {weeks.map((week, index) => {
+          const fromEnd = weeks.length - 1 - index;
+          const tip = {
+            title: `Week of ${formatDay(week.start)}`,
+            rows: [{ label: "km", value: formatNumber(week.km, 1) }, { label: "", value: formatCount(week.runs, "run") }],
+          };
+          return (
+            <div class:list={{ isSelected: week.isSelected }} data-tip={JSON.stringify(tip)}>
+              <span class="value">{Math.round(week.km)}</span>
+              <i style={`height: ${(week.km / most) * 180}px`} />
+              <span class:list={["tick", { isMinor: fromEnd % (every * 2) !== 0 }]}>{fromEnd % every === 0 ? formatDay(week.start) : ""}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .columns {
+    display: flex;
+    gap: 8px;
+    height: 230px;
+  }
+
+  .columns.isDense {
+    gap: 3px;
+  }
+
+  .columns > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    min-width: 0;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  i {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    background: #c9c9c9;
+  }
+
+  .isSelected i {
+    background: var(--field);
+  }
+
+  .columns > :global(.isActive) i {
+    background: var(--ink);
+  }
+
+  .tick {
+    height: 18px;
+  }
+
+  .isDense .value {
+    display: none;
+  }
+
+  /* Edge labels stay inside narrow charts */
+  .isDense > div:first-child .tick {
+    align-self: flex-start;
+  }
+
+  .isDense > div:last-child .tick {
+    align-self: flex-end;
+  }
+
+  @media (max-width: 560px) {
+    .columns {
+      gap: 3px;
+    }
+
+    .value,
+    .tick.isMinor {
+      visibility: hidden;
+    }
+
+    .columns > div:last-child .tick {
+      align-self: flex-end;
+    }
+  }
+</style>
