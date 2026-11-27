@@ -9,6 +9,9 @@ export function average(values: Array<number | null>): number | null {
   return recorded.length ? sum(recorded) / recorded.length : null;
 }
 
+// Items dated inside the range
+export const within = <T extends { date: string }>(items: T[], { start, end }: DateRange): T[] => items.filter((item) => item.date >= start && item.date <= end);
+
 // Monday of the week containing the date
 export function weekStart(date: string): string {
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
@@ -39,16 +42,6 @@ export function bucketByDate<T extends { date: string }>(items: T[], range: Date
   return [...buckets.values()];
 }
 
-// One bucket per calendar month in the range, flagging the one in progress
-export function bucketByMonth<T extends { date: string }>(items: T[], { start, end }: DateRange, today: string): Array<Bucket<T> & { month: string }> {
-  const buckets: Array<Bucket<T> & { month: string }> = [];
-  for (let date = `${start.slice(0, 7)}-01`; date <= end; date = `${addDays(date, 31).slice(0, 7)}-01`) {
-    const month = date.slice(0, 7);
-    buckets.push({ month, start: date, isPartial: today.startsWith(month), items: items.filter((item) => item.date.startsWith(month)) });
-  }
-  return buckets;
-}
-
 // One entry per week, keeping the latest reading of each
 export function latestPerWeek<T extends { date: string }>(readings: T[], range: DateRange) {
   return bucketByDate(readings, range, "week").map((bucket) => ({ start: bucket.start, reading: bucket.items.at(-1) }));
@@ -62,8 +55,6 @@ export function overallPace(activities: Activity[]): number | null {
 }
 
 export type FormMetric = keyof Activity["form"];
-
-export const hasForm = (activity: Activity) => activity.sport === "run" && Object.values(activity.form).some((value) => value != null);
 
 // Mean across runs weighted by moving time, null when none recorded it
 export function formAverage(activities: Activity[], metric: FormMetric): number | null {

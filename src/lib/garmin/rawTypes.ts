@@ -15,7 +15,6 @@ export interface RawActivity {
   elevationGain?: Maybe<number>;
   calories?: Maybe<number>;
   averageHR?: Maybe<number>;
-  maxHR?: Maybe<number>;
   activityTrainingLoad?: Maybe<number>;
   hrTimeInZone_1?: Maybe<number>;
   hrTimeInZone_2?: Maybe<number>;
@@ -57,11 +56,11 @@ export interface RawDailySummary {
   calendarDate: string;
   includesWellnessData?: Maybe<boolean>;
   movement?: Maybe<{ steps?: Maybe<{ goal?: Maybe<number>; value?: Maybe<number>; distanceInMeters?: Maybe<number> }> }>;
-  calories?: Maybe<{ burnedResting?: Maybe<number>; burnedActive?: Maybe<number> }>;
-  heartRate?: Maybe<{ minValue?: Maybe<number>; maxValue?: Maybe<number>; restingValue?: Maybe<number> }>;
-  intensityMinutes?: Maybe<{ goal?: Maybe<number>; moderate?: Maybe<number>; vigorous?: Maybe<number> }>;
+  calories?: Maybe<{ burnedActive?: Maybe<number> }>;
+  heartRate?: Maybe<{ restingValue?: Maybe<number> }>;
+  intensityMinutes?: Maybe<{ moderate?: Maybe<number>; vigorous?: Maybe<number> }>;
   stress?: Maybe<{ avgLevel?: Maybe<number> }>;
-  bodyBattery?: Maybe<{ minValue?: Maybe<number>; maxValue?: Maybe<number>; chargedValue?: Maybe<number>; drainedValue?: Maybe<number> }>;
+  bodyBattery?: Maybe<{ maxValue?: Maybe<number> }>;
 }
 
 export interface RawNight {
@@ -79,12 +78,7 @@ export interface RawNight {
 }
 
 export interface RawHrv {
-  hrvSummaries?: Array<{
-    calendarDate: string;
-    lastNightAvg?: Maybe<number>;
-    status?: Maybe<string>;
-    baseline?: Maybe<{ balancedLow?: Maybe<number>; balancedUpper?: Maybe<number> }>;
-  }>;
+  hrvSummaries?: Array<{ calendarDate: string; lastNightAvg?: Maybe<number> }>;
 }
 
 export interface RawVo2Max {
@@ -93,7 +87,7 @@ export interface RawVo2Max {
 
 export interface RawWeightSummary {
   summaryDate: string;
-  latestWeight?: Maybe<{ weight?: Maybe<number>; bmi?: Maybe<number>; bodyFat?: Maybe<number> }>;
+  latestWeight?: Maybe<{ weight?: Maybe<number> }>;
 }
 
 interface RawComponent {

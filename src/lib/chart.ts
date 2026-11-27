@@ -14,15 +14,12 @@ export interface Tip {
 export interface Segment {
   value: number;
   color: string;
-  // Floating bars start here instead of stacking
-  from?: number;
 }
 
 export interface Column {
   label: string;
   tip: Tip;
   segments: Segment[];
-  isMuted?: boolean;
 }
 
 export interface Point {
@@ -47,23 +44,6 @@ export interface TrendMetric {
     // Counts such as steps are drawn as columns standing on zero
     isColumns?: boolean;
   } | null;
-}
-
-export interface LegendItem {
-  label: string;
-  color: string;
-}
-
-export interface Stat {
-  label: string;
-  value: string;
-  unit?: string;
-  detail?: string | undefined;
-}
-
-export interface TableData {
-  head: string[];
-  rows: string[][];
 }
 
 // Rounded domain with clean ticks, returned as percentages from the baseline

@@ -13,7 +13,6 @@ export interface Activity {
   distanceKm: number;
   durationSec: number;
   movingSec: number;
-  speedKmh: number | null;
   paceSecPerKm: number | null;
   elevationGain: number | null;
   calories: number | null;
@@ -31,32 +30,18 @@ export interface Activity {
   };
 }
 
-export interface ActivityBucket {
-  label: string;
-  title: string;
-  isPartial: boolean;
-  items: Activity[];
-}
-
 export interface Day {
   date: string;
   isToday: boolean;
   steps: number | null;
   stepGoal: number | null;
   distanceKm: number | null;
-  restingKcal: number | null;
   activeKcal: number | null;
   restingHr: number | null;
-  minHr: number | null;
-  maxHr: number | null;
   moderateMin: number | null;
   vigorousMin: number | null;
-  intensityGoal: number | null;
   stress: number | null;
-  batteryLow: number | null;
   batteryHigh: number | null;
-  batteryCharged: number | null;
-  batteryDrained: number | null;
 }
 
 export interface Night {
@@ -77,9 +62,6 @@ export interface Night {
 export interface HrvReading {
   date: string;
   value: number;
-  balancedLow: number | null;
-  balancedHigh: number | null;
-  status: string | null;
 }
 
 export interface Vo2Reading {
@@ -90,8 +72,6 @@ export interface Vo2Reading {
 export interface WeightReading {
   date: string;
   kg: number;
-  bmi: number | null;
-  bodyFat: number | null;
 }
 
 export interface FitnessFactor {

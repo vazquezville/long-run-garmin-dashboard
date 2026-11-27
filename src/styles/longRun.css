@@ -133,6 +133,14 @@ h2 {
   font-weight: 800;
 }
 
+.tooltipKey {
+  align-self: center;
+  width: 12px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color);
+}
+
 /* Colors and weights the shared charts read from their container */
 .chartTheme {
   --grid: var(--line);

@@ -1,9 +1,8 @@
 ---
-import { average, formAverage, type FormMetric } from "../../lib/data/aggregate.ts";
+import { average, formAverage, within, type FormMetric } from "../../lib/data/aggregate.ts";
 import type { Activity, Vo2Reading } from "../../lib/data/types.ts";
 import { formatCount, formatDay, formatNumber } from "../../lib/format.ts";
 import { bucketUnit, periodBuckets, type Period } from "../../lib/trainingPeriod.ts";
-import { within } from "../../lib/views.ts";
 import MetricExplorer from "../metricExplorer.astro";
 
 interface Props {

@@ -1,4 +1,5 @@
 ---
+import { within } from "../lib/data/aggregate.ts";
 import BodySection from "../components/health/bodySection.astro";
 import HealthHero from "../components/health/healthHero.astro";
 import OtherActivities from "../components/health/otherActivities.astro";
@@ -12,7 +13,6 @@ import { daysBetween } from "../lib/garmin/ranges.ts";
 import { toTrend } from "../lib/healthSeries.ts";
 import { upTo } from "../lib/periods.ts";
 import { bucketUnit, lastDaysPeriod, parsePeriod, periodBuckets, periodName } from "../lib/trainingPeriod.ts";
-import { within } from "../lib/views.ts";
 
 // Daily data takes one request per month, so periods stop at a year
 const maxDays = 365;

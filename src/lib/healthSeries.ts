@@ -1,8 +1,7 @@
 import type { TrendMetric } from "./chart.ts";
-import { average } from "./data/aggregate.ts";
+import { average, within } from "./data/aggregate.ts";
 import { formatCompact, formatNumber } from "./format.ts";
 import type { PeriodBucket } from "./trainingPeriod.ts";
-import { within } from "./views.ts";
 
 interface Series<T> {
   id: string;

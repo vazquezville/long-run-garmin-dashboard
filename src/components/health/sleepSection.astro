@@ -1,10 +1,9 @@
 ---
-import { average } from "../../lib/data/aggregate.ts";
+import { average, within } from "../../lib/data/aggregate.ts";
 import type { Night } from "../../lib/data/types.ts";
 import { formatDuration, formatLabel, formatNumber, formatWeekday } from "../../lib/format.ts";
 import { sleepStages } from "../../lib/sleepStages.ts";
 import type { PeriodBucket } from "../../lib/trainingPeriod.ts";
-import { within } from "../../lib/views.ts";
 import ColumnChart from "../charts/columnChart.astro";
 
 interface Props {

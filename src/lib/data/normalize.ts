@@ -41,7 +41,6 @@ export function toActivities(raw: RawActivity[], range: DateRange): Activity[] {
         distanceKm: (item.distance ?? 0) / 1000,
         durationSec: item.duration ?? 0,
         movingSec: item.movingDuration ?? item.duration ?? 0,
-        speedKmh: speed && speed * 3.6,
         paceSecPerKm: speed && 1000 / speed,
         elevationGain: item.elevationGain ?? null,
         calories: item.calories ?? null,
@@ -83,19 +82,12 @@ export function toDays(raw: RawDailySummary[], range: DateRange, today: string):
       steps: steps?.value ?? null,
       stepGoal: positive(steps?.goal),
       distanceKm: meters != null ? meters / 1000 : null,
-      restingKcal: positive(item?.calories?.burnedResting),
       activeKcal: item?.calories?.burnedActive ?? null,
       restingHr: positive(item?.heartRate?.restingValue),
-      minHr: positive(item?.heartRate?.minValue),
-      maxHr: positive(item?.heartRate?.maxValue),
       moderateMin: item?.intensityMinutes?.moderate ?? null,
       vigorousMin: item?.intensityMinutes?.vigorous ?? null,
-      intensityGoal: positive(item?.intensityMinutes?.goal),
       stress: positive(item?.stress?.avgLevel),
-      batteryLow: positive(item?.bodyBattery?.minValue),
       batteryHigh: positive(item?.bodyBattery?.maxValue),
-      batteryCharged: item?.bodyBattery?.chargedValue ?? null,
-      batteryDrained: item?.bodyBattery?.drainedValue ?? null,
     };
   });
 }
@@ -134,15 +126,7 @@ export function toHrv(raw: NonNullable<RawHrv["hrvSummaries"]>, range: DateRange
     .flatMap((item): HrvReading[] => {
       const value = positive(item.lastNightAvg);
       if (!value || !isInRange(item.calendarDate, range)) return [];
-      return [
-        {
-          date: item.calendarDate,
-          value,
-          balancedLow: item.baseline?.balancedLow ?? null,
-          balancedHigh: item.baseline?.balancedUpper ?? null,
-          status: item.status ?? null,
-        },
-      ];
+      return [{ date: item.calendarDate, value }];
     })
     .sort(byDate);
 }
@@ -162,7 +146,7 @@ export function toWeights(raw: RawWeightSummary[], range: DateRange): WeightRead
     .flatMap((item): WeightReading[] => {
       const grams = positive(item.latestWeight?.weight);
       if (!grams || !isInRange(item.summaryDate, range)) return [];
-      return [{ date: item.summaryDate, kg: grams / 1000, bmi: positive(item.latestWeight?.bmi), bodyFat: positive(item.latestWeight?.bodyFat) }];
+      return [{ date: item.summaryDate, kg: grams / 1000 }];
     })
     .sort(byDate);
 }

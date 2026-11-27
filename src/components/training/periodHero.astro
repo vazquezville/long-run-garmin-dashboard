@@ -1,10 +1,9 @@
 ---
-import { overallPace, sum } from "../../lib/data/aggregate.ts";
+import { overallPace, sum, within } from "../../lib/data/aggregate.ts";
 import type { Activity } from "../../lib/data/types.ts";
 import { formatClock, formatCount, formatDuration, formatNumber } from "../../lib/format.ts";
 import { sessionKinds } from "../../lib/sessionKind.ts";
 import { periodBuckets, periodName, type Period } from "../../lib/trainingPeriod.ts";
-import { within } from "../../lib/views.ts";
 
 interface Props {
   period: Period;

@@ -42,7 +42,6 @@ export const formatWeekdayName = (date: string) => formatDateWith(date, { weekda
 export const formatMonth = (date: string) => `${formatDateWith(date, { month: "short" })} ’${date.slice(2, 4)}`;
 
 export const formatMonthName = (month: string) => formatDateWith(`${month}-01`, { month: "short" });
-export const formatMonthLong = (month: string) => formatDateWith(`${month}-01`, { month: "long" });
 export const formatMonthTitle = (month: string) => formatDateWith(`${month}-01`, { month: "long", year: "numeric" });
 
 // Turns API constants like VERY_GOOD into Very good

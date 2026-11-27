@@ -1,4 +1,5 @@
 ---
+import { within } from "../lib/data/aggregate.ts";
 import BestEfforts from "../components/training/bestEfforts.astro";
 import PeriodFilter from "../components/periodFilter.astro";
 import HealthBand from "../components/training/healthBand.astro";
@@ -11,7 +12,6 @@ import { createSource } from "../lib/data/source.ts";
 import { addDays, daysBetween } from "../lib/garmin/ranges.ts";
 import { upTo } from "../lib/periods.ts";
 import { parsePeriod, periodHref } from "../lib/trainingPeriod.ts";
-import { within } from "../lib/views.ts";
 
 // Daily data takes one request per month, so very long periods skip it
 const maxHealthDays = 366;

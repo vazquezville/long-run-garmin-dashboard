@@ -7,17 +7,14 @@ interface Props {
   columns: Column[];
   summary: string;
   goal?: number | undefined;
-  max?: number;
   formatTick?: (value: number) => string;
   height?: number;
 }
 
-const { columns, summary, goal, max, formatTick = formatCompact, height } = Astro.props;
+const { columns, summary, goal, formatTick = formatCompact, height } = Astro.props;
 
-const totals = columns.map((column) =>
-  column.segments.reduce((total, segment) => (segment.from != null ? Math.max(total, segment.value) : total + segment.value), 0),
-);
-const axis = createAxis(0, max ?? Math.max(...totals, goal ?? 0, 1));
+const totals = columns.map((column) => column.segments.reduce((total, segment) => total + segment.value, 0));
+const axis = createAxis(0, Math.max(...totals, goal ?? 0, 1));
 const ticks = axis.ticks.map((value) => ({ position: axis.position(value), label: formatTick(value) }));
 
 // Stacked segments keep a 2px gap between each other
@@ -25,17 +22,14 @@ function layout(column: Column) {
   let base = 0;
   const visible = column.segments.filter((segment) => segment.value > 0);
   return visible.map((segment, index) => {
-    const isFloating = segment.from != null;
-    const from = segment.from ?? base;
-    const to = isFloating ? segment.value : base + segment.value;
-    base = to;
-    const bottom = axis.position(from);
-    const size = axis.position(to) - bottom;
+    const bottom = axis.position(base);
+    base += segment.value;
+    const size = axis.position(base) - bottom;
     const isTop = index === visible.length - 1;
     const length = isTop ? `${size}%` : `calc(${size}% - 2px)`;
     return {
       style: `bottom: ${bottom}%; height: max(2px, ${length}); background: ${segment.color}`,
-      shape: isFloating ? "isFloating" : isTop ? "isTop" : "",
+      shape: isTop ? "isTop" : "",
     };
   });
 }
@@ -50,7 +44,7 @@ function layout(column: Column) {
 >
   <div class="columns">
     {columns.map((column) => (
-      <div class:list={["column", { isMuted: column.isMuted }]} data-tip={JSON.stringify(column.tip)}>
+      <div class="column" data-tip={JSON.stringify(column.tip)}>
         {layout(column).map((segment) => <span class:list={["segment", segment.shape]} style={segment.style} />)}
       </div>
     ))}
@@ -74,10 +68,6 @@ function layout(column: Column) {
     background: var(--hover);
   }
 
-  .isMuted .segment {
-    opacity: 0.45;
-  }
-
   .segment {
     position: absolute;
     left: 50%;
@@ -87,9 +77,5 @@ function layout(column: Column) {
 
   .isTop {
     border-radius: 4px 4px 0 0;
-  }
-
-  .isFloating {
-    border-radius: 4px;
   }
 </style>

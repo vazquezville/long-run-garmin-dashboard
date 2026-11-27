@@ -7,11 +7,10 @@ interface Props {
   summary: string;
   // Height of the goal line as a percentage
   reference?: number | undefined;
-  band?: { from: number; to: number } | undefined;
   height?: number;
 }
 
-const { labels, ticks, summary, reference, band, height = 160 } = Astro.props;
+const { labels, ticks, summary, reference, height = 160 } = Astro.props;
 // Short labels such as month names all fit
 const shown = labelIndices(labels.length, labels.every((label) => label.length <= 3) ? 12 : 7);
 ---
@@ -23,7 +22,6 @@ const shown = labelIndices(labels.length, labels.every((label) => label.length <
     </div>
     <div class="plot" tabindex="0" role="group" aria-label={`${summary}. Use the arrow keys to read each value.`} data-chart>
       {ticks.map((tick) => <i class="gridLine" style={`bottom: ${tick.position}%`} />)}
-      {band && <i class="band" style={`bottom: ${band.from}%; height: ${band.to - band.from}%`} />}
       <slot />
       {reference != null && <i class="reference" style={`bottom: ${reference}%`} />}
     </div>
@@ -71,8 +69,7 @@ const shown = labelIndices(labels.length, labels.every((label) => label.length <
   }
 
   .gridLine,
-  .reference,
-  .band {
+  .reference {
     position: absolute;
     right: 0;
     left: 0;
@@ -85,10 +82,6 @@ const shown = labelIndices(labels.length, labels.every((label) => label.length <
 
   .gridLine:first-of-type {
     background: var(--axis);
-  }
-
-  .band {
-    background: var(--hover);
   }
 
   .reference {
