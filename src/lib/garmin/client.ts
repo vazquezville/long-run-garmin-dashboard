@@ -5,7 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 const baseUrl = "https://personal.connectapi.garmin.com";
 const tokenPath = "/personalapitoken-service/personal-api/personal-api-key/token";
-const userAgent = "garmin-dashboard";
+const userAgent = "long-run-garmin-dashboard";
 const timeoutMs = 30_000;
 const minTokenLifetimeMs = 60 * 60 * 1000;
 const maxConcurrentRequests = 4;

@@ -2,6 +2,8 @@
 
 Personal running dashboard for Garmin Connect data, built with Astro.
 
+This is an independent project, not affiliated with or endorsed by Garmin.
+
 ## Setup
 
 1. Create a Personal API key at <https://connect.garmin.com/app/settings/personalApiToken>.
