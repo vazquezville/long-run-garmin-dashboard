@@ -16,6 +16,7 @@ While working on the code, use `pnpm dev` instead of step 4.
 | Page | Content |
 | --- | --- |
 | Training | Running by week, month, year, last X days or all time |
+| Runs | Every run, filtered by type, year, distance and name, sorted by date, distance, pace or load |
 | Run | One run from the list: route, splits, charts along the distance, running form and heart rate zones |
 | Activities, Daily, Sleep | The last 7, 28 or 90 days |
 | Month | Any month with activities, as a calendar with its charts |

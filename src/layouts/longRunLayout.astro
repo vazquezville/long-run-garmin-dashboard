@@ -10,14 +10,14 @@ interface Props {
 const { title, errors = [] } = Astro.props;
 const failures = errors.filter((error) => error != null);
 const loadedAt = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", hourCycle: "h23" });
-// Runs and Health still point at the previous pages
+// Health still points at a previous page
 const links = [
   { href: "/", label: "Training" },
-  { href: "/activities", label: "Runs" },
+  { href: "/runs", label: "Runs" },
   { href: "/daily", label: "Health", isQuiet: true },
 ];
 // A single run belongs to the Runs section
-const section = Astro.url.pathname.startsWith("/run/") ? "/activities" : Astro.url.pathname;
+const section = Astro.url.pathname.startsWith("/run/") ? "/runs" : Astro.url.pathname;
 ---
 
 <!doctype html>

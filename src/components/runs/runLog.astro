@@ -1,0 +1,98 @@
+---
+import { sum } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatMonthTitle, formatNumber } from "../../lib/format.ts";
+import { groupByMonth, isFiltered, paginate, runsHref, sortRuns, type RunQuery } from "../../lib/runLog.ts";
+import ArrowLink from "../arrowLink.astro";
+import RunRow from "../runRow.astro";
+
+interface Props {
+  // Runs that match every filter, newest first
+  matches: Activity[];
+  query: RunQuery;
+}
+
+const { matches, query } = Astro.props;
+const { items, page, pages } = paginate(sortRuns(matches, query.sort), query.page);
+// Months only make sense while runs are in date order
+const groups = query.sort === "newest" ? groupByMonth(items) : [{ month: null, runs: items }];
+// Totals cover the whole month, even when it continues on another page
+const monthSummary = (month: string) => {
+  const all = matches.filter((run) => run.date.startsWith(month));
+  return `${formatCount(all.length, "run")}, ${formatNumber(sum(all.map((run) => run.distanceKm)), 1)} km`;
+};
+---
+
+<section class="band">
+  <div class="wrap">
+    {matches.length === 0 && (
+      <p class="muted">
+        No runs match these filters. {isFiltered(query) && <a class="clear" href="/runs">Clear filters</a>}
+      </p>
+    )}
+    {matches.length > 0 && isFiltered(query) && <p class="cleared"><a class="clear" href="/runs">Clear filters</a></p>}
+    {groups.map((group) => group.runs.length > 0 && (
+      <div class="group">
+        {group.month && (
+          <header>
+            <h2>{formatMonthTitle(group.month)}</h2>
+            <p class="muted">{monthSummary(group.month)}</p>
+          </header>
+        )}
+        <ul class="runRows">
+          {group.runs.map((run) => <RunRow run={run} />)}
+        </ul>
+      </div>
+    ))}
+    {pages > 1 && (
+      <nav aria-label="Pages">
+        <ArrowLink href={page > 1 ? runsHref(query, { page: page - 1 }) : null} label="Previous page" direction="prev" />
+        <span>Page {page} of {pages}</span>
+        <ArrowLink href={page < pages ? runsHref(query, { page: page + 1 }) : null} label="Next page" direction="next" />
+      </nav>
+    )}
+    <p class="others muted">Walks, strength and other sports are in <a href="/activities">Activities</a>.</p>
+  </div>
+</section>
+
+<style>
+  .group + .group {
+    margin-top: 40px;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+    margin-bottom: 14px;
+  }
+
+  h2 {
+    margin: 0;
+  }
+
+  .cleared {
+    margin: -16px 0 16px;
+    text-align: right;
+  }
+
+  .clear {
+    font-weight: 700;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 28px;
+    font-weight: 700;
+  }
+
+  .others {
+    margin-top: 32px;
+    font-size: 13px;
+  }
+</style>

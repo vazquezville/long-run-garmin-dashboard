@@ -1,0 +1,160 @@
+---
+import { runsHref, sortOptions, type RunQuery } from "../../lib/runLog.ts";
+import { sessionKinds, type SessionKind } from "../../lib/sessionKind.ts";
+
+interface Props {
+  query: RunQuery;
+  // Session types and years found in the history
+  kinds: SessionKind[];
+  years: string[];
+}
+
+const { query, kinds, years } = Astro.props;
+const types = [
+  { kind: null, label: "All" },
+  ...kinds.map((kind) => ({ kind, label: kind === "run" ? "Other" : sessionKinds[kind].label })),
+];
+---
+
+<div class="filter">
+  <nav aria-label="Session type">
+    {types.map(({ kind, label }) => (
+      <a class="condensed" href={runsHref(query, { kind })} aria-current={query.kind === kind ? "true" : undefined}>
+        {label}
+      </a>
+    ))}
+  </nav>
+
+  <form action="/runs" method="get" autocomplete="off" role="search" data-runs-form>
+    {query.kind && <input type="hidden" name="type" value={query.kind} />}
+    {query.range && <input type="hidden" name="distance" value={query.range} />}
+    <input class="search" type="search" name="q" value={query.search} placeholder="Search by name" aria-label="Search by name" maxlength="80" />
+    <select name="year" aria-label="Year">
+      <option value="">All years</option>
+      {years.map((year) => <option value={year} selected={query.year === year}>{year}</option>)}
+    </select>
+    <select name="sort" aria-label="Order">
+      {sortOptions.map((option) => (
+        <option value={option.id === "newest" ? "" : option.id} selected={query.sort === option.id}>{option.label}</option>
+      ))}
+    </select>
+    <button type="submit">Search</button>
+  </form>
+</div>
+
+<script>
+  for (const form of document.querySelectorAll<HTMLFormElement>("[data-runs-form]")) {
+    // Empty fields stay out of the address
+    form.addEventListener("formdata", ({ formData }) => {
+      for (const [name, value] of [...formData]) if (!value) formData.delete(name);
+    });
+    form.addEventListener("change", (event) => {
+      if (event.target instanceof HTMLSelectElement) form.requestSubmit();
+    });
+  }
+</script>
+
+<style>
+  .filter {
+    display: grid;
+    gap: 14px;
+    margin-top: 22px;
+    padding: 14px 0;
+    border-block: 3px solid var(--ink);
+  }
+
+  nav,
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  nav {
+    gap: 4px;
+  }
+
+  form {
+    gap: 10px;
+  }
+
+  a {
+    padding: 8px 14px 10px;
+    border-radius: 6px;
+    font-size: 30px;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  a:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  a[aria-current] {
+    background: var(--ink);
+    color: var(--field);
+  }
+
+  input,
+  select,
+  button {
+    height: 44px;
+    border: 2.5px solid var(--ink);
+    border-radius: 99px;
+    background: transparent;
+    font-weight: 700;
+  }
+
+  .search {
+    flex: 1;
+    min-width: 200px;
+    padding: 0 18px;
+  }
+
+  .search::placeholder {
+    color: var(--ink);
+    opacity: 0.65;
+  }
+
+  select {
+    padding: 0 14px;
+    cursor: pointer;
+  }
+
+  option {
+    background: var(--paper);
+  }
+
+  button {
+    padding: 0 22px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  @media (max-width: 900px) {
+    a {
+      padding: 7px 10px;
+      font-size: 22px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .search {
+      flex-basis: 100%;
+    }
+
+    select {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Phones submit from the keyboard, so the button is hidden from sight */
+    button {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  }
+</style>

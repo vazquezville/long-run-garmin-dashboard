@@ -1,0 +1,172 @@
+---
+import { overallPace, sum } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatClock, formatCount, formatDuration, formatNumber } from "../../lib/format.ts";
+import { distanceRanges, filterRuns, inRange, runsHref, type RunQuery } from "../../lib/runLog.ts";
+
+interface Props {
+  // Whole history
+  runs: Activity[];
+  // Runs that match every filter
+  matches: Activity[];
+  query: RunQuery;
+}
+
+const { runs, matches, query } = Astro.props;
+const count = formatNumber(matches.length);
+const km = sum(matches.map((run) => run.distanceKm));
+const summary = matches.length
+  ? `${formatNumber(km, km >= 1000 ? 0 : 1)} km in ${formatDuration(sum(matches.map((run) => run.movingSec)))}, at ${formatClock(overallPace(matches))} per km`
+  : "Nothing matches these filters";
+
+// Bars show every distance, so another range can be picked directly
+const others = filterRuns(runs, { ...query, range: null });
+const ranges = distanceRanges.map((range) => ({ ...range, count: others.filter((run) => inRange(run, range)).length }));
+const most = Math.max(...ranges.map((range) => range.count), 1);
+---
+
+<div class="hero">
+  <div class="total">
+    <p class="giant condensed" style={`--chars: ${count.length}`}>{count}<small>{matches.length === 1 ? "run" : "runs"}</small></p>
+    <p class="summary">{summary}</p>
+  </div>
+  <nav class:list={["bars", { hasChoice: query.range }]} aria-label="Distance in kilometers">
+    {ranges.map((range) => {
+      const isChosen = query.range === range.id;
+      return (
+        <a
+          href={runsHref(query, { range: isChosen ? null : range.id })}
+          aria-current={isChosen ? "true" : undefined}
+          aria-label={`${range.name}, ${formatCount(range.count, "run")}${isChosen ? ", selected, activate to clear" : ""}`}
+        >
+          <span class="track">
+            <span class:list={["bar", { isEmpty: range.count === 0 }]} style={range.count ? `height: max(38px, ${(range.count / most) * 100}%)` : undefined}>
+              {range.count > 0 && <b class="condensed">{range.count}</b>}
+            </span>
+          </span>
+          <span class="tick">{range.label} km</span>
+        </a>
+      );
+    })}
+  </nav>
+</div>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: end;
+    gap: 48px;
+    margin-top: 28px;
+  }
+
+  .total {
+    container-type: inline-size;
+  }
+
+  .giant {
+    font-size: min(250px, calc(100cqw / (var(--chars) * 0.44 + 0.8)));
+    white-space: nowrap;
+  }
+
+  .giant small {
+    margin-left: 10px;
+    font-size: 0.28em;
+  }
+
+  .summary {
+    min-height: 58px;
+    margin-top: 14px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .bars {
+    display: flex;
+    gap: 8px;
+    height: 290px;
+  }
+
+  a {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .track {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+  }
+
+  .bar {
+    display: block;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .bar.isEmpty {
+    height: 4px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  b {
+    display: block;
+    padding-top: 8px;
+    font-size: 30px;
+  }
+
+  a:hover .bar:not(.isEmpty) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  /* The other ranges step back once one is chosen */
+  .hasChoice a:not([aria-current]) .bar {
+    opacity: 0.45;
+  }
+
+  .tick {
+    height: 22px;
+    border-radius: 99px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  a[aria-current] .tick {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bars {
+      height: 220px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .bars {
+      gap: 4px;
+    }
+
+    b {
+      font-size: 20px;
+    }
+
+    .tick {
+      font-size: 11px;
+    }
+  }
+</style>

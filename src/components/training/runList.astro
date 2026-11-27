@@ -1,7 +1,7 @@
 ---
 import type { Activity } from "../../lib/data/types.ts";
-import { formatClock, formatCount, formatFullWeekday, formatNumber } from "../../lib/format.ts";
-import { sessionKinds, sessionName } from "../../lib/sessionKind.ts";
+import { formatCount } from "../../lib/format.ts";
+import RunRow from "../runRow.astro";
 
 interface Props {
   // Newest first
@@ -16,30 +16,8 @@ const shown = 5;
   <div class="wrap">
     <h2>Runs</h2>
     {runs.length === 0 && <p class="muted">No runs in this period. Step back with the arrow or choose a longer range.</p>}
-    <ul>
-      {runs.map((run, index) => (
-        <li hidden={index >= shown}>
-          <span class="distance condensed">{formatNumber(run.distanceKm, 1)}</span>
-          <div>
-            <strong><a href={`/run/${run.id}`}>{sessionName(run.name)}</a></strong>
-            <p class="muted">
-              <span class="kind" style={`color: ${sessionKinds[run.kind].color}`}>{sessionKinds[run.kind].label}</span>, {formatFullWeekday(run.date)}
-            </p>
-          </div>
-          <div>
-            <b class="condensed">{formatClock(run.paceSecPerKm)}</b>
-            <span class="muted">per km</span>
-          </div>
-          <div class="extra">
-            <b class="condensed">{formatNumber(run.avgHr)}</b>
-            <span class="muted">bpm</span>
-          </div>
-          <div class="extra">
-            <b class="condensed">{formatNumber(run.trainingLoad)}</b>
-            <span class="muted">load</span>
-          </div>
-        </li>
-      ))}
+    <ul class="runRows">
+      {runs.map((run, index) => <RunRow run={run} hidden={index >= shown} />)}
     </ul>
     {runs.length > shown && (
       <button type="button" aria-expanded="false" data-shown={shown} data-more={`Show all ${formatCount(runs.length, "run")}`}>
@@ -61,66 +39,6 @@ const shown = 5;
 </script>
 
 <style>
-  li {
-    position: relative;
-    display: grid;
-    grid-template-columns: 150px minmax(0, 1fr) repeat(3, 100px);
-    align-items: center;
-    gap: 20px;
-    padding: 14px 8px;
-    border-top: 2px solid var(--ink);
-  }
-
-  ul {
-    margin-inline: -8px;
-  }
-
-  li:hover {
-    background: var(--quiet);
-  }
-
-  a {
-    text-decoration: none;
-  }
-
-  /* The whole row opens the run */
-  a::after {
-    position: absolute;
-    inset: 0;
-    content: "";
-  }
-
-  a:focus-visible {
-    outline: 0;
-  }
-
-  a:focus-visible::after {
-    outline: 3px solid var(--ink);
-    outline-offset: -3px;
-  }
-
-  li[hidden] {
-    display: none;
-  }
-
-  .distance {
-    font-size: 54px;
-  }
-
-  strong {
-    font-size: 18px;
-    overflow-wrap: anywhere;
-  }
-
-  .kind {
-    font-weight: 700;
-  }
-
-  b {
-    display: block;
-    font-size: 28px;
-  }
-
   button {
     margin-top: 14px;
     padding: 10px 22px;
@@ -129,19 +47,5 @@ const shown = 5;
     background: var(--ink);
     color: var(--paper);
     font-weight: 700;
-  }
-
-  @media (max-width: 900px) {
-    li {
-      grid-template-columns: 90px minmax(0, 1fr) 70px;
-    }
-
-    .extra {
-      display: none;
-    }
-
-    .distance {
-      font-size: 40px;
-    }
   }
 </style>

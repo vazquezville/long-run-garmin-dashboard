@@ -1,0 +1,25 @@
+---
+import RunLog from "../components/runs/runLog.astro";
+import RunsFilter from "../components/runs/runsFilter.astro";
+import RunsHero from "../components/runs/runsHero.astro";
+import LongRunLayout from "../layouts/longRunLayout.astro";
+import { createSource } from "../lib/data/source.ts";
+import { filterRuns, parseRunQuery } from "../lib/runLog.ts";
+import { sessionKinds, type SessionKind } from "../lib/sessionKind.ts";
+
+const source = createSource();
+const activities = await source.allActivities();
+const runs = (activities.data ?? []).filter((activity) => activity.sport === "run");
+const query = parseRunQuery(Astro.url.searchParams);
+const matches = filterRuns(runs, query);
+const kinds = (Object.keys(sessionKinds) as SessionKind[]).filter((kind) => runs.some((run) => run.kind === kind));
+const years = [...new Set(runs.map((run) => run.date.slice(0, 4)))];
+---
+
+<LongRunLayout title="Runs" errors={[activities.error]}>
+  <Fragment slot="field">
+    <RunsFilter query={query} kinds={kinds} years={years} />
+    <RunsHero runs={runs} matches={matches} query={query} />
+  </Fragment>
+  <RunLog matches={matches} query={query} />
+</LongRunLayout>
