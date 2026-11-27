@@ -42,8 +42,10 @@ export interface TrendMetric {
     note: string;
     points: Point[];
     domain: [number, number];
-    reference: number;
+    reference?: number | undefined;
     formatTick: (value: number) => string;
+    // Counts such as steps are drawn as columns standing on zero
+    isColumns?: boolean;
   } | null;
 }
 

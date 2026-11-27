@@ -1,5 +1,6 @@
 ---
 import type { TrendMetric } from "../lib/chart.ts";
+import ColumnChart from "./charts/columnChart.astro";
 import LineChart from "./charts/lineChart.astro";
 
 interface Props {
@@ -26,16 +27,26 @@ const first = metrics.find((metric) => metric.chart)?.id;
     <div class="trend chartTheme" data-trend={id} hidden={id !== first}>
       <h3 class="condensed">{chart.title}</h3>
       <p class="muted">{chart.note}</p>
-      <LineChart
-        points={chart.points}
-        summary={chart.title}
-        color="var(--ink)"
-        domain={chart.domain}
-        formatTick={chart.formatTick}
-        reference={chart.reference}
-        height={260}
-        connectGaps
-      />
+      {chart.isColumns ? (
+        <ColumnChart
+          columns={chart.points.map(({ label, tip, value }) => ({ label, tip, segments: value ? [{ value, color: "var(--ink)" }] : [] }))}
+          summary={chart.title}
+          goal={chart.reference}
+          formatTick={chart.formatTick}
+          height={260}
+        />
+      ) : (
+        <LineChart
+          points={chart.points}
+          summary={chart.title}
+          color="var(--ink)"
+          domain={chart.domain}
+          formatTick={chart.formatTick}
+          {...(chart.reference == null ? {} : { reference: chart.reference })}
+          height={260}
+          connectGaps
+        />
+      )}
     </div>
   ))}
 </div>

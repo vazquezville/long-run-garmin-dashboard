@@ -38,6 +38,7 @@ test("the all time period starts at the oldest run", () => {
   const all = parsePeriod(new URLSearchParams("all"), today, "2021-03-20");
   assert.deepEqual(all, { mode: "all", id: "", start: "2021-03-20", end: today });
   assert.equal(periodHref(all), "/?all");
+  assert.equal(periodHref(parse("month=2026-04"), "/health"), "/health?month=2026-04");
   assert.equal(periodName(all, today), "All time");
   assert.equal(adjacentPeriod(all, -1, today), null);
   assert.deepEqual(

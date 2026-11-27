@@ -13,6 +13,10 @@
   --tempo: #c23600;
   --interval: #cc0050;
   --race: #000000;
+  --sleepDeep: #6a35c9;
+  --sleepLight: #2a8fe0;
+  --sleepRem: #00a383;
+  --sleepAwake: #e8590c;
   --condensed: "Big Shoulders Display", sans-serif;
 }
 
@@ -159,6 +163,14 @@ div.chartTheme .chart {
 
 .chartTheme .chart .reference {
   border-top: 2px dashed var(--field);
+}
+
+.chartTheme .chart .segment {
+  width: clamp(2px, calc(100% - 3px), 44px);
+}
+
+.chartTheme {
+  --hover: rgba(0, 0, 0, 0.06);
 }
 
 @media (max-width: 900px) {

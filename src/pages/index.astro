@@ -1,7 +1,7 @@
 ---
 import BestEfforts from "../components/training/bestEfforts.astro";
+import PeriodFilter from "../components/periodFilter.astro";
 import HealthBand from "../components/training/healthBand.astro";
-import PeriodFilter from "../components/training/periodFilter.astro";
 import PeriodHero from "../components/training/periodHero.astro";
 import RunList from "../components/training/runList.astro";
 import RunningForm from "../components/training/runningForm.astro";
@@ -10,7 +10,7 @@ import LongRunLayout from "../layouts/longRunLayout.astro";
 import { createSource } from "../lib/data/source.ts";
 import { addDays, daysBetween } from "../lib/garmin/ranges.ts";
 import { upTo } from "../lib/periods.ts";
-import { parsePeriod } from "../lib/trainingPeriod.ts";
+import { parsePeriod, periodHref } from "../lib/trainingPeriod.ts";
 import { within } from "../lib/views.ts";
 
 // Daily data takes one request per month, so very long periods skip it
@@ -44,5 +44,5 @@ const selected = within(runs, period);
   <WeeklyDistance runs={runs} period={period} today={today} />
   <RunningForm period={period} today={today} runs={selected} vo2={vo2.data ?? []} />
   <BestEfforts runs={selected} history={runs} isAllTime={period.mode === "all"} />
-  <HealthBand health={hasHealth ? { days: days?.data ?? [], nights: nights?.data ?? [] } : null} />
+  <HealthBand href={periodHref(period, "/health")} health={hasHealth ? { days: days?.data ?? [], nights: nights?.data ?? [] } : null} />
 </LongRunLayout>

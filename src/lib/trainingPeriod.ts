@@ -38,8 +38,8 @@ export function lastDaysPeriod(count: number, today: string): Period {
 // Runs from the oldest run to today
 export const allTimePeriod = (first: string, today: string): Period => ({ mode: "all", id: "", start: first, end: today });
 
-// Reads addresses such as ?month=2026-04, falling back to this week
-export function parsePeriod(params: URLSearchParams, today: string, first: string = today): Period {
+// Reads addresses such as ?month=2026-04, falling back to this week unless told otherwise
+export function parsePeriod(params: URLSearchParams, today: string, first: string = today, fallback: Period = calendarPeriod("week", today)): Period {
   if (params.has("all")) return allTimePeriod(first, today);
   const days = params.get("days");
   if (days && /^\d+$/.test(days)) return lastDaysPeriod(Number(days), today);
@@ -47,10 +47,10 @@ export function parsePeriod(params: URLSearchParams, today: string, first: strin
     const anchor = `${params.get(mode)}${suffix}`;
     if (isDate(anchor) && anchor >= oldestDate) return calendarPeriod(mode, anchor > today ? today : anchor);
   }
-  return calendarPeriod("week", today);
+  return fallback;
 }
 
-export const periodHref = ({ mode, id }: Period) => (mode === "all" ? "/?all" : `/?${mode}=${id}`);
+export const periodHref = ({ mode, id }: Period, page = "/") => (mode === "all" ? `${page}?all` : `${page}?${mode}=${id}`);
 
 // A date inside the period, today when the period contains it
 export const anchorOf = ({ start, end }: Period, today: string) => (start <= today && end >= today ? today : start);

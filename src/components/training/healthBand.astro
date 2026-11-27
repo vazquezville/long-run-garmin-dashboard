@@ -4,11 +4,13 @@ import type { Day, Night } from "../../lib/data/types.ts";
 import { formatDuration, formatNumber } from "../../lib/format.ts";
 
 interface Props {
+  // Health page showing the same period
+  href: string;
   // Left out when the period is too long to load daily data
   health: { days: Day[]; nights: Night[] } | null;
 }
 
-const { health } = Astro.props;
+const { health, href } = Astro.props;
 const finished = health?.days.filter((day) => !day.isToday) ?? [];
 const resting = average(health?.days.map((day) => day.restingHr) ?? []);
 const figures = [
@@ -21,7 +23,7 @@ const figures = [
 
 <section>
   <div class="wrap">
-    <p><a href="/daily">Health</a>, same period</p>
+    <p><a href={href}>Health</a>, same period</p>
     {health ? (
       <dl>
         {figures.map((figure) => (

@@ -1,0 +1,119 @@
+---
+import { average } from "../../lib/data/aggregate.ts";
+import type { Night } from "../../lib/data/types.ts";
+import { formatDuration, formatLabel, formatNumber, formatWeekday } from "../../lib/format.ts";
+import { sleepStages } from "../../lib/sleepStages.ts";
+import type { PeriodBucket } from "../../lib/trainingPeriod.ts";
+import { within } from "../../lib/views.ts";
+import ColumnChart from "../charts/columnChart.astro";
+
+interface Props {
+  // Oldest first
+  nights: Night[];
+  buckets: PeriodBucket[];
+  unitName: string;
+}
+
+const { nights, buckets, unitName } = Astro.props;
+const columns = buckets.map((bucket) => {
+  const slept = within(nights, bucket);
+  const stages = sleepStages.map((stage) => ({ ...stage, seconds: average(slept.map((night) => night[stage.key])) ?? 0 }));
+  return {
+    label: bucket.label,
+    segments: stages.map((stage) => ({ value: stage.seconds / 3600, color: stage.color })),
+    tip: {
+      title: bucket.title,
+      rows: slept.length
+        ? [
+            ...stages.toReversed().map((stage) => ({ label: stage.label, value: formatDuration(stage.seconds), color: stage.color })),
+            { label: "asleep", value: formatDuration(average(slept.map((night) => night.totalSec))) },
+          ]
+        : [{ label: "", value: bucket.isFuture ? "Still to come" : "Not recorded" }],
+    },
+  };
+});
+const figures = [
+  { label: "Sleep score", value: formatNumber(average(nights.map((night) => night.score))) },
+  { label: "Heart rate asleep", value: formatNumber(average(nights.map((night) => night.avgHr))) },
+  { label: "Stress asleep", value: formatNumber(average(nights.map((night) => night.avgStress))) },
+];
+const last = nights.at(-1);
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Sleep</h2>
+    {last ? (
+      <>
+        <dl>
+          {figures.map((figure) => (
+            <div>
+              <dt>{figure.label}</dt>
+              <dd class="condensed">{figure.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p class="muted">
+          Last recorded night: {formatWeekday(last.date)}
+          {last.bedtime && last.wakeTime && `, ${last.bedtime} to ${last.wakeTime}`}, {formatDuration(last.totalSec)} asleep
+          {last.scoreLabel && `, rated ${formatLabel(last.scoreLabel).toLowerCase()}`}
+        </p>
+        <div class="chartTheme">
+          <h3 class="condensed">Stages by {unitName}</h3>
+          <ul>
+            {sleepStages.map((stage) => (
+              <li><i style={`background: ${stage.color}`} />{stage.label}</li>
+            ))}
+          </ul>
+          <ColumnChart columns={columns} summary={`Sleep stages by ${unitName}, in hours`} formatTick={(value) => `${value}h`} height={260} />
+        </div>
+      </>
+    ) : (
+      <p class="muted">No sleep recorded in this period. Wear your watch overnight, or choose a longer range.</p>
+    )}
+  </div>
+</section>
+
+<style>
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 48px;
+    margin-bottom: 14px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The figure reads first, above its label */
+  dd {
+    order: -1;
+    font-size: 56px;
+  }
+
+  .chartTheme {
+    margin-top: 28px;
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 6px 0;
+    font-size: 13px;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  i {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+</style>

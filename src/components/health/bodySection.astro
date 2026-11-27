@@ -1,0 +1,170 @@
+---
+import { latestPerWeek } from "../../lib/data/aggregate.ts";
+import type { FitnessAge, FitnessFactor, HeartRateZone, WeightReading } from "../../lib/data/types.ts";
+import { formatDay, formatFullDate, formatMonth, formatNumber } from "../../lib/format.ts";
+import type { DateRange } from "../../lib/garmin/ranges.ts";
+import LineChart from "../charts/lineChart.astro";
+
+interface Props {
+  weights: WeightReading[];
+  // Range the weights were loaded for
+  weightRange: DateRange;
+  age: FitnessAge | null;
+  zones: HeartRateZone[];
+}
+
+const { weights, weightRange, age, zones } = Astro.props;
+const latest = weights.at(-1);
+const weeks = latestPerWeek(weights, weightRange);
+const points = weeks.map(({ start, reading }) => ({
+  label: formatMonth(start),
+  value: reading?.kg ?? null,
+  tip: {
+    title: `Week of ${formatDay(start)}`,
+    rows: [reading ? { label: "kg", value: formatNumber(reading.kg, 1) } : { label: "", value: "Not logged" }],
+  },
+}));
+const factors: Array<[label: string, factor: FitnessFactor, digits: number]> = age
+  ? [
+      ["Resting heart rate", age.restingHr, 0],
+      ["Vigorous days per week", age.vigorousDays, 1],
+      ["Vigorous minutes per week", age.vigorousMinutes, 0],
+      ["Body mass index", age.bmi, 1],
+    ]
+  : [];
+const figures = [
+  { label: "Weight in kg", value: formatNumber(latest?.kg ?? null, 1), detail: latest ? `Logged ${formatFullDate(latest.date)}` : "Not logged" },
+  { label: "Fitness age", value: formatNumber(age ? Math.floor(age.fitnessAge) : null), detail: age ? `Actual age ${age.age}` : "Not calculated" },
+  ...(age?.achievableAge ? [{ label: "Achievable fitness age", value: formatNumber(Math.floor(age.achievableAge)), detail: "" }] : []),
+];
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Body</h2>
+    <dl>
+      {figures.map((figure) => (
+        <div>
+          <dt>{figure.label}</dt>
+          <dd class="value condensed">{figure.value}</dd>
+          <dd class="muted">{figure.detail}</dd>
+        </div>
+      ))}
+    </dl>
+    {latest && (
+      <div class="chartTheme">
+        <h3 class="condensed">Weight over two years</h3>
+        <p class="muted">In kilograms, latest entry of each week</p>
+        <LineChart points={points} summary="Weekly weight over two years" color="var(--ink)" connectGaps height={200} />
+      </div>
+    )}
+    <div class="tables">
+      {factors.length > 0 && (
+        <table>
+          <caption class="condensed">What shapes your fitness age</caption>
+          <thead>
+            <tr>
+              <th scope="col">Factor</th>
+              <th scope="col">Yours</th>
+              <th scope="col">Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            {factors.map(([label, factor, digits]) => (
+              <tr>
+                <th scope="row">{label}</th>
+                <td>{formatNumber(factor.value, digits)}</td>
+                <td>{formatNumber(factor.target, digits)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {zones.length > 0 && (
+        <table>
+          <caption class="condensed">Heart rate zones</caption>
+          <thead>
+            <tr>
+              <th scope="col">Zone</th>
+              <th scope="col">Beats per minute</th>
+            </tr>
+          </thead>
+          <tbody>
+            {zones.map((zone) => (
+              <tr>
+                <th scope="row">Zone {zone.zone}</th>
+                <td>{zone.to ? `${zone.from} to ${zone.to}` : `${zone.from} and up`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 48px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The figure reads first, above its label */
+  .value {
+    order: -1;
+    font-size: 56px;
+  }
+
+  .chartTheme {
+    margin-top: 28px;
+  }
+
+  .tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    align-items: start;
+    gap: 32px 48px;
+    margin-top: 32px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  caption {
+    padding-bottom: 8px;
+    font-size: 30px;
+    text-align: left;
+  }
+
+  th,
+  td {
+    padding: 9px 0 9px 12px;
+    border-top: 1px solid var(--line);
+    text-align: right;
+  }
+
+  th:first-child {
+    padding-left: 0;
+    text-align: left;
+  }
+
+  thead th {
+    border-top: 2px solid var(--ink);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  tbody th {
+    font-weight: 600;
+  }
+</style>

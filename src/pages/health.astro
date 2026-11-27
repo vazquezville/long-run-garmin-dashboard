@@ -1,0 +1,84 @@
+---
+import BodySection from "../components/health/bodySection.astro";
+import HealthHero from "../components/health/healthHero.astro";
+import OtherActivities from "../components/health/otherActivities.astro";
+import SleepSection from "../components/health/sleepSection.astro";
+import MetricExplorer from "../components/metricExplorer.astro";
+import PeriodFilter from "../components/periodFilter.astro";
+import LongRunLayout from "../layouts/longRunLayout.astro";
+import { createSource } from "../lib/data/source.ts";
+import type { Day } from "../lib/data/types.ts";
+import { daysBetween } from "../lib/garmin/ranges.ts";
+import { toTrend } from "../lib/healthSeries.ts";
+import { upTo } from "../lib/periods.ts";
+import { bucketUnit, lastDaysPeriod, parsePeriod, periodBuckets, periodName } from "../lib/trainingPeriod.ts";
+import { within } from "../lib/views.ts";
+
+// Daily data takes one request per month, so periods stop at a year
+const maxDays = 365;
+
+const source = createSource();
+const { today } = source;
+const activities = await source.allActivities();
+const first = activities.data?.at(-1)?.date ?? today;
+const asked = parsePeriod(Astro.url.searchParams, today, first, lastDaysPeriod(30, today));
+const period = asked.mode === "all" || daysBetween(asked.start, asked.end) > maxDays ? lastDaysPeriod(maxDays, today) : asked;
+const elapsed = upTo(period, today);
+const [days, nights, hrv, weights, age, zones] = await Promise.all([
+  source.days(elapsed),
+  source.nights(elapsed),
+  source.hrv(elapsed),
+  source.weights(),
+  source.fitnessAge(),
+  source.heartRateZones(),
+]);
+
+const buckets = periodBuckets(period, today);
+const unitName = bucketUnit(period);
+const shown = days.data ?? [];
+// Totals of today are still growing
+const finished = shown.filter((day) => !day.isToday);
+const goal = finished.findLast((day) => day.stepGoal != null)?.stepGoal ?? null;
+// Garmin counts every vigorous minute twice
+const intensity = (day: Day) => (day.moderateMin == null ? null : day.moderateMin + 2 * (day.vigorousMin ?? 0));
+
+const recovery = [
+  toTrend({ id: "restingHr", label: "Resting heart rate", unit: "bpm", items: shown, read: (day) => day.restingHr }, buckets, unitName),
+  toTrend({ id: "hrv", label: "Heart rate variability", unit: "ms", items: hrv.data ?? [], read: (reading) => reading.value }, buckets, unitName),
+  toTrend({ id: "stress", label: "Stress", unit: "of 100", items: finished, read: (day) => day.stress }, buckets, unitName),
+  toTrend({ id: "battery", label: "Body Battery peak", unit: "of 100", items: finished, read: (day) => day.batteryHigh }, buckets, unitName),
+];
+const activity = [
+  toTrend({ id: "steps", label: "Steps", unit: "a day", items: finished, read: (day) => day.steps, isColumns: true, goal }, buckets, unitName),
+  toTrend({ id: "onFoot", label: "Distance on foot", unit: "km", digits: 1, items: finished, read: (day) => day.distanceKm, isColumns: true }, buckets, unitName),
+  toTrend({ id: "calories", label: "Active calories", unit: "kcal", items: finished, read: (day) => day.activeKcal, isColumns: true }, buckets, unitName),
+  toTrend({ id: "intensity", label: "Intensity minutes", unit: "per day", items: finished, read: intensity, isColumns: true }, buckets, unitName),
+];
+const others = within(activities.data ?? [], period).filter((item) => item.sport !== "run");
+const groups = [
+  { name: "recovery", title: "Recovery", metrics: recovery },
+  { name: "daily", title: "Daily activity", metrics: activity },
+];
+---
+
+<LongRunLayout title="Health" errors={[activities.error, days.error, nights.error, hrv.error, weights.error, age.error, zones.error]} isQuiet>
+  <Fragment slot="field">
+    <PeriodFilter period={period} today={today} first={first} page="/health" maxDays={maxDays} />
+    <HealthHero name={periodName(period, today)} days={shown} finished={finished} nights={nights.data ?? []} />
+  </Fragment>
+  <SleepSection nights={nights.data ?? []} buckets={buckets} unitName={unitName} />
+  {groups.map((group) => (
+    <section class="band">
+      <div class="wrap">
+        <h2>{group.title}</h2>
+        {group.metrics.some((metric) => metric.chart) ? (
+          <MetricExplorer name={group.name} metrics={group.metrics} />
+        ) : (
+          <p class="muted">The watch recorded nothing of this in the period.</p>
+        )}
+      </div>
+    </section>
+  ))}
+  <BodySection weights={weights.data ?? []} weightRange={source.lastTwoYears} age={age.data} zones={zones.data ?? []} />
+  <OtherActivities activities={others} />
+</LongRunLayout>

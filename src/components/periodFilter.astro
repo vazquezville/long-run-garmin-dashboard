@@ -1,5 +1,5 @@
 ---
-import { formatFullDate, formatMonthTitle } from "../../lib/format.ts";
+import { formatFullDate, formatMonthTitle } from "../lib/format.ts";
 import {
   adjacentPeriod,
   allTimePeriod,
@@ -12,24 +12,29 @@ import {
   periodHref,
   weekName,
   type Period,
-} from "../../lib/trainingPeriod.ts";
-import ArrowLink from "../arrowLink.astro";
+} from "../lib/trainingPeriod.ts";
+import ArrowLink from "./arrowLink.astro";
 
 interface Props {
   period: Period;
   today: string;
-  // Date of the oldest run, nothing earlier is worth browsing
+  // Date of the oldest record, nothing earlier is worth browsing
   first: string;
+  page?: string;
+  // Longest period offered, pages with a limit have no all time tab
+  maxDays?: number;
 }
 
-const { period, today, first } = Astro.props;
+const { period, today, first, page = "/", maxDays } = Astro.props;
+const dayLimit = maxDays ?? maxDayCount;
+const href = (target: Period) => periodHref(target, page);
 const anchor = anchorOf(period, today);
 const modes = [
   { label: "Week", target: period.mode === "week" ? period : calendarPeriod("week", anchor) },
   { label: "Month", target: period.mode === "month" ? period : calendarPeriod("month", anchor) },
   { label: "Year", target: period.mode === "year" ? period : calendarPeriod("year", anchor) },
   { label: "Last days", target: period.mode === "days" ? period : lastDaysPeriod(defaultDayCount, today) },
-  { label: "All time", target: allTimePeriod(first, today) },
+  ...(maxDays ? [] : [{ label: "All time", target: allTimePeriod(first, today) }]),
 ];
 
 const previous = period.start > first ? adjacentPeriod(period, -1, today) : null;
@@ -48,22 +53,22 @@ if (period.mode === "month" || period.mode === "year") {
 <div class="filter">
   <nav class="modes" aria-label="Period">
     {modes.map(({ label, target }) => (
-      <a class="condensed" href={periodHref(target)} aria-current={target.mode === period.mode ? "true" : undefined}>
+      <a class="condensed" href={href(target)} aria-current={target.mode === period.mode ? "true" : undefined}>
         {label}
       </a>
     ))}
   </nav>
 
-  <form class="control" action="/" method="get" autocomplete="off" data-period-form>
+  <form class="control" action={page} method="get" autocomplete="off" data-period-form>
     {period.mode === "days" ? (
       <>
         {dayCountShortcuts.map((count) => (
-          <a class="chip" href={`/?days=${count}`} aria-current={period.id === String(count) ? "true" : undefined}>
+          <a class="chip" href={`${page}?days=${count}`} aria-current={period.id === String(count) ? "true" : undefined}>
             {count}
           </a>
         ))}
         <label class="count">
-          Last <input class="condensed" type="number" name="days" min="1" max={maxDayCount} value={period.id} required /> days
+          Last <input class="condensed" type="number" name="days" min="1" max={dayLimit} value={period.id} required /> days
         </label>
         <input class="slider" type="range" min="1" max="365" value={Math.min(Number(period.id), 365)} aria-label="Number of days slider" data-day-slider />
       </>
@@ -71,7 +76,7 @@ if (period.mode === "month" || period.mode === "year") {
       <p class="since">Since {formatFullDate(period.start)}</p>
     ) : (
       <>
-        <ArrowLink href={previous && periodHref(previous)} label={`Previous ${period.mode}`} direction="prev" />
+        <ArrowLink href={previous && href(previous)} label={`Previous ${period.mode}`} direction="prev" />
         {period.mode === "week" ? (
           <span class="weekPick">
             <button class="pick" type="button" title="Jump to a date" data-open-picker>{weekName(period)}</button>
@@ -86,7 +91,7 @@ if (period.mode === "month" || period.mode === "year") {
             ))}
           </select>
         )}
-        <ArrowLink href={next && periodHref(next)} label={`Next ${period.mode}`} direction="next" />
+        <ArrowLink href={next && href(next)} label={`Next ${period.mode}`} direction="next" />
       </>
     )}
   </form>

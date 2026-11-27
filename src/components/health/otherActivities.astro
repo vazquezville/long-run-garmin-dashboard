@@ -1,0 +1,138 @@
+---
+import { sum } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatDuration, formatFullWeekday, formatNumber } from "../../lib/format.ts";
+import { sportOrder, sports } from "../../lib/sports.ts";
+
+interface Props {
+  // Every sport but running, newest first
+  activities: Activity[];
+}
+
+const { activities } = Astro.props;
+const shown = 5;
+const totals = sportOrder.flatMap((sport) => {
+  const done = activities.filter((activity) => activity.sport === sport);
+  return done.length
+    ? [{ label: sports[sport].label, count: done.length, seconds: sum(done.map((item) => item.durationSec)), km: sum(done.map((item) => item.distanceKm)) }]
+    : [];
+});
+const lists = [activities.slice(0, shown), activities.slice(shown)];
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Other activities</h2>
+    {activities.length === 0 ? (
+      <p class="muted">No walks, strength or other sports in this period.</p>
+    ) : (
+      <>
+        <ul class="totals">
+          {totals.map((total) => (
+            <li>
+              <b class="condensed">{formatDuration(total.seconds)}</b>
+              <strong>{total.label}</strong>
+              <span class="muted">
+                {formatCount(total.count, "session")}
+                {total.km > 0 && `, ${formatNumber(total.km, 1)} km`}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {lists.map((list, index) => {
+          const rows = (
+            <ul class="rows">
+              {list.map((activity) => (
+                <li>
+                  <b class="condensed">{formatDuration(activity.durationSec)}</b>
+                  <div>
+                    <strong>{activity.name}</strong>
+                    <p class="muted">{sports[activity.sport].label}, {formatFullWeekday(activity.date)}</p>
+                  </div>
+                  <span>{activity.distanceKm > 0 ? `${formatNumber(activity.distanceKm, 1)} km` : ""}</span>
+                </li>
+              ))}
+            </ul>
+          );
+          if (list.length === 0) return null;
+          return index === 0 ? rows : (
+            <details>
+              <summary>Show the other {formatCount(list.length, "session")}</summary>
+              {rows}
+            </details>
+          );
+        })}
+      </>
+    )}
+  </div>
+</section>
+
+<style>
+  .totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .totals li {
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    border-radius: 8px;
+    background: var(--quiet);
+  }
+
+  .totals b {
+    font-size: 44px;
+  }
+
+  .rows li {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .rows b {
+    font-size: 32px;
+  }
+
+  .rows strong {
+    overflow-wrap: anywhere;
+  }
+
+  summary {
+    width: fit-content;
+    margin: 14px 0;
+    padding: 10px 22px;
+    border-radius: 99px;
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details[open] summary {
+    background: var(--quiet);
+    color: var(--ink);
+  }
+
+  @media (max-width: 560px) {
+    .rows li {
+      grid-template-columns: 90px minmax(0, 1fr) auto;
+      gap: 12px;
+    }
+
+    .rows b {
+      font-size: 24px;
+    }
+  }
+</style>

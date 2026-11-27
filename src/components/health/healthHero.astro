@@ -1,0 +1,74 @@
+---
+import { average } from "../../lib/data/aggregate.ts";
+import type { Day, Night } from "../../lib/data/types.ts";
+import { formatCount, formatDuration, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  name: string;
+  // Finished days only
+  finished: Day[];
+  days: Day[];
+  nights: Night[];
+}
+
+const { name, finished, days, nights } = Astro.props;
+const figures = [
+  { label: "Time asleep", value: formatDuration(average(nights.map((night) => night.totalSec))), detail: formatCount(nights.length, "recorded night") },
+  { label: "Resting heart rate", value: formatNumber(average(days.map((day) => day.restingHr))), detail: "bpm" },
+  { label: "Steps per day", value: formatNumber(average(finished.map((day) => day.steps))), detail: "Today left out" },
+  { label: "Stress", value: formatNumber(average(finished.map((day) => day.stress))), detail: "From 0 to 100" },
+];
+---
+
+<div class="hero">
+  <h1 class="condensed">{name}</h1>
+  <dl>
+    {figures.map((figure) => (
+      <div>
+        <dt>{figure.label}</dt>
+        <dd class="value condensed">{figure.value}</dd>
+        <dd class="muted">{figure.detail}</dd>
+      </div>
+    ))}
+  </dl>
+</div>
+
+<style>
+  .hero {
+    margin-top: 28px;
+  }
+
+  h1 {
+    margin: 0 0 20px;
+    font-size: 44px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+    font-weight: 600;
+  }
+
+  /* The figure reads first, above its label */
+  .value {
+    order: -1;
+    font-size: clamp(48px, 6.4vw, 84px);
+    white-space: nowrap;
+  }
+
+  .muted {
+    font-weight: 400;
+  }
+
+  @media (max-width: 700px) {
+    dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

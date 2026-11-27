@@ -5,16 +5,17 @@ import "../styles/longRun.css";
 interface Props {
   title: string;
   errors?: Array<string | null | undefined>;
+  // Secondary pages trade the orange field for a gray one
+  isQuiet?: boolean;
 }
 
-const { title, errors = [] } = Astro.props;
+const { title, errors = [], isQuiet = false } = Astro.props;
 const failures = errors.filter((error) => error != null);
 const loadedAt = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", hourCycle: "h23" });
-// Health still points at a previous page
 const links = [
   { href: "/", label: "Training" },
   { href: "/runs", label: "Runs" },
-  { href: "/daily", label: "Health", isQuiet: true },
+  { href: "/health", label: "Health", isQuiet: true },
 ];
 // A single run belongs to the Runs section
 const section = Astro.url.pathname.startsWith("/run/") ? "/runs" : Astro.url.pathname;
@@ -31,7 +32,7 @@ const section = Astro.url.pathname.startsWith("/run/") ? "/runs" : Astro.url.pat
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <div class="field">
+    <div class:list={["field", { isQuiet }]}>
       <div class="wrap">
         <header>
           <a class="brand condensed" href="/">Long Run</a>
@@ -68,6 +69,11 @@ const section = Astro.url.pathname.startsWith("/run/") ? "/runs" : Astro.url.pat
   .field {
     padding: 18px 0 36px;
     background: var(--field);
+  }
+
+  .field.isQuiet {
+    border-bottom: 1px solid var(--line);
+    background: var(--quiet);
   }
 
   header {
