@@ -1,14 +1,20 @@
 # Long Run
 
-Personal running dashboard for Garmin Connect data, built with Astro.
+Going through your data in Garmin isn't the friendliest experience, so I decided to build this page. It runs locally and puts running first, with sleep, steps and the rest one step behind.
 
-This is an independent project, not affiliated with or endorsed by Garmin.
+Built with Astro on the Garmin Connect Personal API. This is an independent project, not affiliated with or endorsed by Garmin.
+
+## Requirements
+
+- Node.js 22.23.4 or newer
+- [pnpm](https://pnpm.io)
+- A Garmin Connect account
 
 ## Setup
 
-1. Create a Personal API key at <https://connect.garmin.com/app/settings/personalApiToken>.
-2. Add it to `.env` as `GARMIN_API_KEY=your-key`.
-3. Run `pnpm install`.
+1. Run `pnpm install`.
+2. Copy the example environment file with `cp .env.example .env`.
+3. Create a Personal API key at <https://connect.garmin.com/app/settings/personalApiToken> and paste it into `.env` after `GARMIN_API_KEY=`.
 4. Run `pnpm build`, then `pnpm start`, and open <http://localhost:4321>.
 
 While working on the code, use `pnpm dev` instead of step 4.
