@@ -1,0 +1,75 @@
+---
+import type { RunDetail, Stretch } from "../../lib/data/runDetail.ts";
+import { formatClock, formatNumber } from "../../lib/format.ts";
+import { distanceDomain, distancePoints } from "../../lib/runSeries.ts";
+import LineChart from "../charts/lineChart.astro";
+
+interface Props {
+  stretches: Stretch[];
+  detail: RunDetail;
+  climb: number | null;
+}
+
+const { stretches, detail, climb } = Astro.props;
+const series = [
+  {
+    title: "Pace",
+    unit: "/km",
+    note: "Minutes per kilometer, faster is higher",
+    // Plotted in minutes so the ticks land on round times
+    values: stretches.map((stretch) => stretch.paceSecPerKm && stretch.paceSecPerKm / 60),
+    format: (value: number) => formatClock(value * 60),
+    margin: 0.15,
+    isInverted: true,
+  },
+  {
+    title: "Heart rate",
+    unit: "bpm",
+    note: `Beats per minute, ${formatNumber(detail.maxHr)} at most`,
+    values: stretches.map((stretch) => stretch.hr),
+    format: (value: number) => formatNumber(value),
+    margin: 5,
+  },
+  {
+    title: "Elevation",
+    unit: "m",
+    note: `${formatNumber(climb)} meters up and ${formatNumber(detail.elevationLoss)} down`,
+    values: stretches.map((stretch) => stretch.elevation),
+    format: (value: number) => formatNumber(value),
+    margin: 5,
+    minSpan: 40,
+  },
+].filter((item) => item.values.some((value) => value != null));
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Along the run</h2>
+    {series.map((item) => {
+      // Stops and walk breaks would flatten the pace line
+      const domain = distanceDomain(item.values, item.margin, { minSpan: item.minSpan, trimHigh: item.isInverted });
+      return (
+        <div class="chartTheme">
+          <h3 class="condensed">{item.title}</h3>
+          <p class="muted">{item.note}</p>
+          <LineChart
+            points={distancePoints(stretches, item.values, item.unit, item.format, domain[1])}
+            summary={`${item.title} along the run, by kilometer`}
+            color="var(--ink)"
+            domain={domain}
+            formatTick={item.format}
+            isInverted={item.isInverted ?? false}
+            height={180}
+            connectGaps
+          />
+        </div>
+      );
+    })}
+  </div>
+</section>
+
+<style>
+  .chartTheme + .chartTheme {
+    margin-top: 28px;
+  }
+</style>

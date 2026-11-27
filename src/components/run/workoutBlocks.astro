@@ -1,0 +1,58 @@
+---
+import type { RunBlock } from "../../lib/data/runDetail.ts";
+import { formatClock, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  blocks: RunBlock[];
+}
+
+const { blocks } = Astro.props;
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Workout</h2>
+    <ul>
+      {blocks.map((block) => (
+        <li>
+          <b class="condensed">{formatNumber(block.distanceKm, 2)}<small>km</small></b>
+          <strong>{block.label}{block.count > 1 && `, ${block.count} times`}</strong>
+          <span>
+            {formatClock(block.seconds)}
+            {block.distanceKm > 0 && ` at ${formatClock(block.seconds / block.distanceKm)} per km`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+  }
+
+  li {
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  b {
+    font-size: 48px;
+  }
+
+  small {
+    margin-left: 4px;
+    font-size: 0.45em;
+  }
+
+  span {
+    color: #bdbdbd;
+  }
+</style>

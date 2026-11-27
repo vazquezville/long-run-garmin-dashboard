@@ -31,6 +31,22 @@ export interface Point {
   value: number | null;
 }
 
+// A selectable figure and the chart it opens, absent without data
+export interface TrendMetric {
+  id: string;
+  label: string;
+  unit: string;
+  value: string;
+  chart: {
+    title: string;
+    note: string;
+    points: Point[];
+    domain: [number, number];
+    reference: number;
+    formatTick: (value: number) => string;
+  } | null;
+}
+
 export interface LegendItem {
   label: string;
   color: string;

@@ -124,6 +124,38 @@ h2 {
   font-weight: 800;
 }
 
+/* Colors and weights the shared charts read from their container */
+.chartTheme {
+  --grid: var(--line);
+  --axis: #999999;
+  --text: var(--ink);
+  --textMuted: var(--muted);
+  --surface: var(--paper);
+}
+
+.chartTheme h3 {
+  margin: 0 0 4px;
+  font-size: 30px;
+}
+
+div.chartTheme .chart {
+  font-size: 12px;
+}
+
+.chartTheme .chart path {
+  stroke-width: 3;
+}
+
+.chartTheme .chart .dot {
+  width: 10px;
+  height: 10px;
+  margin: 0 0 -5px -5px;
+}
+
+.chartTheme .chart .reference {
+  border-top: 2px dashed var(--field);
+}
+
 @media (max-width: 900px) {
   .wrap {
     padding-inline: 16px;

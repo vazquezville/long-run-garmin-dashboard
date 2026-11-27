@@ -1,0 +1,120 @@
+---
+import type { Stretch } from "../../lib/data/runDetail.ts";
+import { formatClock, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  // One stretch per kilometer, the last one may be shorter
+  splits: Stretch[];
+}
+
+const { splits } = Astro.props;
+const isFull = (split: Stretch) => split.endM - split.startM >= 999;
+const fastest = Math.min(...splits.filter(isFull).map((split) => split.paceSecPerKm ?? Infinity));
+const quickest = Math.min(...splits.map((split) => split.paceSecPerKm ?? Infinity));
+const climb = (meters: number | null) => (meters == null ? "–" : `${Math.round(meters) > 0 ? "+" : ""}${formatNumber(Math.round(meters) || 0)} m`);
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Splits</h2>
+    <p class="muted">Longer bars are faster, orange marks the fastest full kilometer</p>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Km</th>
+          <th scope="col">Pace per km</th>
+          <th scope="col">Heart rate</th>
+          <th scope="col">Climb</th>
+        </tr>
+      </thead>
+      <tbody>
+        {splits.map((split) => (
+          <tr class:list={{ isFastest: isFull(split) && split.paceSecPerKm === fastest }}>
+            <th scope="row" class="condensed">{isFull(split) ? Math.round(split.endM / 1000) : formatNumber(split.endM / 1000, 2)}</th>
+            <td class="pace">
+              <span style={`width: ${split.paceSecPerKm ? (quickest / split.paceSecPerKm) * 100 : 0}%`}>{formatClock(split.paceSecPerKm)}</span>
+            </td>
+            <td>{formatNumber(split.hr)}</td>
+            <td>{climb(split.climbM)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+  p {
+    margin: -8px 0 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th,
+  td {
+    padding: 5px 0 5px 16px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  th:first-child {
+    width: 64px;
+    padding-left: 0;
+    text-align: left;
+  }
+
+  th:nth-child(2) {
+    text-align: left;
+  }
+
+  thead th {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  tbody tr {
+    border-top: 1px solid var(--line);
+  }
+
+  tbody th {
+    font-size: 28px;
+  }
+
+  .pace {
+    width: 100%;
+    text-align: left;
+  }
+
+  .pace span {
+    display: block;
+    min-width: 56px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .isFastest .pace span {
+    background: var(--field);
+    color: var(--ink);
+  }
+
+  @media (max-width: 560px) {
+    th,
+    td {
+      padding-left: 8px;
+      font-size: 13px;
+    }
+
+    th:first-child {
+      width: 40px;
+    }
+  }
+</style>

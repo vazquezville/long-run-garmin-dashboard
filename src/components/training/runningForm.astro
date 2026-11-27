@@ -4,7 +4,7 @@ import type { Activity, Vo2Reading } from "../../lib/data/types.ts";
 import { formatCount, formatDay, formatNumber } from "../../lib/format.ts";
 import { bucketUnit, periodBuckets, type Period } from "../../lib/trainingPeriod.ts";
 import { within } from "../../lib/views.ts";
-import LineChart from "../charts/lineChart.astro";
+import MetricExplorer from "../metricExplorer.astro";
 
 interface Props {
   period: Period;
@@ -34,7 +34,7 @@ function toChart(label: string, unit: string, digits: number, margin: number, me
   if (mean == null || recorded.length === 0) return null;
   return {
     title: `${label} by ${unitName}`,
-    mean,
+    reference: mean,
     note: `The dashed line is the period average, ${formatNumber(mean, digits)} ${unit}`,
     domain: [Math.min(...recorded) - margin, Math.max(...recorded) + margin] as [number, number],
     formatTick: (value: number) => formatNumber(value, digits),
@@ -78,160 +78,18 @@ const figures = [
     chart: toChart("VO2 max", "ml/kg/min", 1, 1, average(readings.map((reading) => reading.value)), vo2Values),
   },
 ];
-const first = figures.find((figure) => figure.chart)?.id;
 ---
 
 <section class="band">
   <div class="wrap">
     <h2>Running form</h2>
-    <p class="hint muted">{first ? "Select a figure to see how it changed." : "No running form data in this period."}</p>
-    <div class="figures" role="group" aria-label="Choose what to chart">
-      {figures.map((figure) => (
-        <button type="button" data-metric={figure.id} aria-pressed={figure.id === first ? "true" : "false"} disabled={!figure.chart}>
-          <span class="value condensed">{figure.value}</span>
-          <span>{figure.label}</span>
-          <span class="unit">{figure.unit}</span>
-        </button>
-      ))}
-    </div>
-    {figures.map(({ id, chart }) => chart && (
-      <div class="trend" data-trend={id} hidden={id !== first}>
-        <h3 class="condensed">{chart.title}</h3>
-        <p class="muted">{chart.note}</p>
-        <LineChart
-          points={chart.points}
-          summary={chart.title}
-          color="var(--ink)"
-          domain={chart.domain}
-          formatTick={chart.formatTick}
-          reference={chart.mean}
-          height={260}
-          connectGaps
-        />
-      </div>
-    ))}
+    <p class="hint muted">{figures.some((figure) => figure.chart) ? "Select a figure to see how it changed." : "No running form data in this period."}</p>
+    <MetricExplorer name="training" metrics={figures} />
   </div>
 </section>
 
-<script>
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-metric]")];
-
-  function select(metric: string) {
-    for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.metric === metric));
-    for (const trend of document.querySelectorAll<HTMLElement>("[data-trend]")) trend.hidden = trend.dataset.trend !== metric;
-  }
-
-  for (const button of buttons) {
-    button.addEventListener("click", () => {
-      select(button.dataset.metric!);
-      try {
-        localStorage.setItem("formMetric", button.dataset.metric!);
-      } catch {}
-    });
-  }
-
-  // Keeps the chosen chart while browsing periods
-  try {
-    const saved = localStorage.getItem("formMetric");
-    if (buttons.some((button) => button.dataset.metric === saved && !button.disabled)) select(saved!);
-  } catch {}
-</script>
-
 <style>
-  .figures {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 8px;
-  }
-
   .hint {
     margin: -8px 0 16px;
-  }
-
-  button {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 12px 10px;
-    border: 0;
-    border-radius: 8px;
-    background: var(--quiet);
-    text-align: left;
-  }
-
-  button:hover:enabled {
-    background: var(--line);
-  }
-
-  button:disabled {
-    background: none;
-    cursor: default;
-  }
-
-  button[aria-pressed="true"],
-  button[aria-pressed="true"]:hover {
-    background: var(--ink);
-    color: var(--paper);
-  }
-
-  .value {
-    font-size: 56px;
-  }
-
-  .unit {
-    color: var(--muted);
-  }
-
-  button[aria-pressed="true"] .unit {
-    color: #bdbdbd;
-  }
-
-  /* Colors the shared chart reads from its container */
-  .trend {
-    --grid: var(--line);
-    --axis: #999999;
-    --text: var(--ink);
-    --textMuted: var(--muted);
-    --surface: var(--paper);
-    margin-top: 28px;
-  }
-
-  h3 {
-    margin: 0 0 4px;
-    font-size: 30px;
-  }
-
-  .trend :global(.chart) {
-    font-size: 12px;
-  }
-
-  .trend :global(path) {
-    stroke-width: 3;
-  }
-
-  .trend :global(.dot) {
-    width: 10px;
-    height: 10px;
-    margin: 0 0 -5px -5px;
-  }
-
-  .trend :global(.reference) {
-    border-top: 2px dashed var(--field);
-  }
-
-  @media (max-width: 1040px) {
-    .figures {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 560px) {
-    .figures {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .value {
-      font-size: 40px;
-    }
   }
 </style>

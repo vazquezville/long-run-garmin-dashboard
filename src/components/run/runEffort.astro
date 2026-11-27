@@ -1,0 +1,118 @@
+---
+import { sum } from "../../lib/data/aggregate.ts";
+import type { RunDetail } from "../../lib/data/runDetail.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatClock, formatDuration, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  run: Activity;
+  detail: RunDetail | null;
+}
+
+const { run, detail } = Astro.props;
+const total = sum(run.zoneSec);
+const most = Math.max(...run.zoneSec, 1);
+const figures = [
+  { label: "Training load", value: formatNumber(run.trainingLoad) },
+  { label: "Aerobic effect, of 5", value: formatNumber(detail?.aerobicEffect ?? null, 1) },
+  { label: "Anaerobic effect, of 5", value: formatNumber(detail?.anaerobicEffect ?? null, 1) },
+  { label: "Maximum heart rate", value: formatNumber(detail?.maxHr ?? null) },
+  { label: "Grade adjusted pace", value: formatClock(detail?.gradePaceSecPerKm ?? null) },
+  { label: "Calories", value: formatNumber(run.calories) },
+].filter((figure) => figure.value !== "–");
+---
+
+{(figures.length > 0 || total > 0) && (
+<section class="band">
+  <div class="wrap">
+    <h2>Effort</h2>
+    <dl>
+      {figures.map((figure) => (
+        <div>
+          <dt>{figure.label}</dt>
+          <dd class="condensed">{figure.value}</dd>
+        </div>
+      ))}
+    </dl>
+    {total > 0 && (
+      <>
+        <h3 class="condensed">Time in heart rate zones</h3>
+        <ul>
+          {run.zoneSec.map((seconds, index) => (
+            <li>
+              <span>Zone {index + 1}</span>
+              <i><b style={`width: ${(seconds / most) * 100}%; background: var(--zone${index + 1})`} /></i>
+              <span>{formatDuration(seconds)}</span>
+              <span class="muted">{Math.round((seconds / total) * 100)}%</span>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+  </div>
+</section>
+)}
+
+<style>
+  /* One hue, darker as the effort rises */
+  ul {
+    --zone1: #ffcbb8;
+    --zone2: #ff9a75;
+    --zone3: #ff5a1f;
+    --zone4: #bd3500;
+    --zone5: #6b1e00;
+    display: grid;
+    gap: 8px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 20px 16px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The figure reads first, above its label */
+  dd {
+    order: -1;
+    font-size: 56px;
+  }
+
+  h3 {
+    margin: 32px 0 12px;
+    font-size: 30px;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem 3rem;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  li span:nth-child(n + 3) {
+    text-align: right;
+  }
+
+  b {
+    display: block;
+    height: 22px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  @media (max-width: 900px) {
+    dl {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    dd {
+      font-size: 40px;
+    }
+  }
+</style>

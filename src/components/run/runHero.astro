@@ -1,0 +1,178 @@
+---
+import { toRoutePath, type RunDetail } from "../../lib/data/runDetail.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatClock, formatFullWeekday, formatNumber } from "../../lib/format.ts";
+import { sessionKinds, sessionName } from "../../lib/sessionKind.ts";
+import ArrowLink from "../arrowLink.astro";
+
+interface Props {
+  run: Activity;
+  older: Activity | undefined;
+  newer: Activity | undefined;
+  route: RunDetail["route"];
+}
+
+const { run, older, newer, route } = Astro.props;
+const drawing = toRoutePath(route);
+const distance = formatNumber(run.distanceKm, 2);
+// Room around the drawing for the end markers
+const pad = 30;
+const figures = [
+  { label: "Time", value: formatClock(run.durationSec) },
+  { label: "Pace per km", value: formatClock(run.paceSecPerKm) },
+  { label: "Average heart rate", value: formatNumber(run.avgHr) },
+  { label: "Meters climbed", value: formatNumber(run.elevationGain) },
+].filter((figure) => figure.value !== "–");
+---
+
+<div class="bar">
+  <p>{sessionKinds[run.kind].label}, {formatFullWeekday(run.date)} at {run.time}</p>
+  <div class="arrows">
+    <ArrowLink href={older ? `/run/${older.id}` : null} label="Older run" direction="prev" />
+    <ArrowLink href={newer ? `/run/${newer.id}` : null} label="Newer run" direction="next" />
+  </div>
+</div>
+<div class:list={["hero", { hasRoute: drawing }]}>
+  <div class="total">
+    <p class="giant condensed" style={`--chars: ${distance.length}`}>{distance}<small>km</small></p>
+    <h1>{sessionName(run.name)}</h1>
+    <dl>
+      {figures.map((figure) => (
+        <div>
+          <dt>{figure.label}</dt>
+          <dd class="condensed">{figure.value}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+  {drawing && (
+    <svg
+      viewBox={`${-pad} ${-pad} ${drawing.width + pad * 2} ${drawing.height + pad * 2}`}
+      role="img"
+      aria-label="Route of the run, the white dot marks the start and the black dot the finish"
+    >
+      <path d={drawing.path} />
+      <circle class="finish" cx={drawing.end[0]} cy={drawing.end[1]} r="18" />
+      <circle class="start" cx={drawing.start[0]} cy={drawing.start[1]} r="18" />
+    </svg>
+  )}
+</div>
+
+<style>
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 84px;
+    margin-top: 22px;
+    padding: 14px 0;
+    border-block: 3px solid var(--ink);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .arrows {
+    display: flex;
+    gap: 10px;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 48px;
+    margin-top: 28px;
+  }
+
+  .hero.hasRoute {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .total {
+    container-type: inline-size;
+  }
+
+  .giant {
+    font-size: min(230px, calc(100cqw / (var(--chars) * 0.44 + 0.45)));
+    white-space: nowrap;
+  }
+
+  .giant small {
+    margin-left: 8px;
+    font-size: 0.28em;
+  }
+
+  h1 {
+    margin: 16px 0;
+    font-size: 24px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column;
+    font-weight: 700;
+  }
+
+  /* The figure reads first, above its label */
+  dd {
+    order: -1;
+    font-size: 44px;
+  }
+
+  svg {
+    width: 100%;
+    height: 380px;
+    overflow: visible;
+  }
+
+  path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  circle {
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .start {
+    fill: var(--paper);
+    stroke: var(--ink);
+  }
+
+  .finish {
+    fill: var(--ink);
+    stroke: var(--paper);
+  }
+
+  @media (max-width: 900px) {
+    .hero.hasRoute {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bar {
+      font-size: 16px;
+    }
+
+    svg {
+      height: 300px;
+    }
+
+    dd {
+      font-size: 36px;
+    }
+  }
+</style>

@@ -21,7 +21,7 @@ const shown = 5;
         <li hidden={index >= shown}>
           <span class="distance condensed">{formatNumber(run.distanceKm, 1)}</span>
           <div>
-            <strong>{sessionName(run.name)}</strong>
+            <strong><a href={`/run/${run.id}`}>{sessionName(run.name)}</a></strong>
             <p class="muted">
               <span class="kind" style={`color: ${sessionKinds[run.kind].color}`}>{sessionKinds[run.kind].label}</span>, {formatFullWeekday(run.date)}
             </p>
@@ -62,12 +62,41 @@ const shown = 5;
 
 <style>
   li {
+    position: relative;
     display: grid;
     grid-template-columns: 150px minmax(0, 1fr) repeat(3, 100px);
     align-items: center;
     gap: 20px;
-    padding: 14px 0;
+    padding: 14px 8px;
     border-top: 2px solid var(--ink);
+  }
+
+  ul {
+    margin-inline: -8px;
+  }
+
+  li:hover {
+    background: var(--quiet);
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  /* The whole row opens the run */
+  a::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  a:focus-visible {
+    outline: 0;
+  }
+
+  a:focus-visible::after {
+    outline: 3px solid var(--ink);
+    outline-offset: -3px;
   }
 
   li[hidden] {

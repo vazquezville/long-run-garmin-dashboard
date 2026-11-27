@@ -7,11 +7,11 @@ const byDate = (a: { date: string }, b: { date: string }) => a.date.localeCompar
 const isInRange = (date: string, { start, end }: DateRange) => date >= start && date <= end;
 
 // Zero and negative values mean "no reading" for vitals
-const positive = (value: number | null | undefined): number | null => (value != null && value > 0 ? value : null);
+export const positive = (value: number | null | undefined): number | null => (value != null && value > 0 ? value : null);
 
 // Lower cadences come from sensor dropouts, not from running
 const minCadence = 100;
-const toCadence = (value: number | null | undefined): number | null => (value != null && value >= minCadence ? value : null);
+export const toCadence = (value: number | null | undefined): number | null => (value != null && value >= minCadence ? value : null);
 
 const sportRules: Array<[pattern: RegExp, sport: Sport]> = [
   [/running/, "run"],

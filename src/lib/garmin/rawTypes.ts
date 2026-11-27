@@ -35,6 +35,24 @@ export interface RawActivity {
   avgPower?: Maybe<number>;
 }
 
+export interface RawActivityDetail {
+  summaryDTO?: Maybe<{
+    maxHR?: Maybe<number>;
+    elevationLoss?: Maybe<number>;
+    trainingEffect?: Maybe<number>;
+    anaerobicTrainingEffect?: Maybe<number>;
+    avgGradeAdjustedSpeed?: Maybe<number>;
+  }>;
+  splitSummaries?: Maybe<Array<{ splitType?: string; noOfSplits?: number; distance?: number; duration?: number }>>;
+}
+
+// Time series of an activity, one row per sample
+export interface RawActivityMetrics {
+  metricDescriptors?: Maybe<Array<{ metricsIndex: number; key: string }>>;
+  activityDetailMetrics?: Maybe<Array<{ metrics: Array<number | null> }>>;
+  geoPolylineDTO?: Maybe<{ polyline?: Maybe<Array<{ lat?: Maybe<number>; lon?: Maybe<number>; valid?: Maybe<boolean> }>> }>;
+}
+
 export interface RawDailySummary {
   calendarDate: string;
   includesWellnessData?: Maybe<boolean>;

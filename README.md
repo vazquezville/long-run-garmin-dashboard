@@ -16,6 +16,7 @@ While working on the code, use `pnpm dev` instead of step 4.
 | Page | Content |
 | --- | --- |
 | Training | Running by week, month, year, last X days or all time |
+| Run | One run from the list: route, splits, charts along the distance, running form and heart rate zones |
 | Activities, Daily, Sleep | The last 7, 28 or 90 days |
 | Month | Any month with activities, as a calendar with its charts |
 | Year | Any year with activities, with a day by day map and monthly totals |
@@ -45,6 +46,8 @@ Session types come from the activity name (long run, intervals, tempo, easy, rac
 - Data is cached in `.cache/`: 30 minutes for the last week, 7 days up to three months old and 30 days beyond.
 - The full activity history refreshes once a day, and the last 90 days follow the rules above.
 - The first visit to an older period takes longer while it downloads.
+- Opening a run downloads its samples and GPS route, about 1 MB, and caches them like the rest.
+- Routes are drawn from the GPS points alone, with no map service.
 - Sleep, heart rate, steps and stress appear on Training for periods of up to a year.
 - `.cache/` contains your health data. Do not publish it.
 - The server has no login. Keep it on your own machine.

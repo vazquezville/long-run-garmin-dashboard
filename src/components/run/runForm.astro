@@ -1,0 +1,64 @@
+---
+import type { FormMetric } from "../../lib/data/aggregate.ts";
+import type { Stretch } from "../../lib/data/runDetail.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatNumber } from "../../lib/format.ts";
+import { distanceDomain, distancePoints } from "../../lib/runSeries.ts";
+import MetricExplorer from "../metricExplorer.astro";
+
+interface Props {
+  // Averages of the whole run
+  form: Activity["form"];
+  stretches: Stretch[];
+}
+
+const { form, stretches } = Astro.props;
+const metrics: Array<[metric: FormMetric, label: string, unit: string, digits: number, margin: number]> = [
+  ["cadence", "Cadence", "spm", 0, 3],
+  ["strideM", "Stride length", "m", 2, 0.05],
+  ["groundContactMs", "Ground contact", "ms", 0, 5],
+  ["oscillationCm", "Vertical oscillation", "cm", 1, 0.3],
+  ["verticalRatio", "Vertical ratio", "%", 1, 0.3],
+  ["powerW", "Power", "W", 0, 10],
+];
+
+const figures = metrics.map(([metric, label, unit, digits, margin]) => {
+  const mean = form[metric];
+  const values = stretches.map((stretch) => stretch.form[metric]);
+  const format = (value: number) => formatNumber(value, digits);
+  const domain = distanceDomain(mean == null ? values : [...values, mean], margin);
+  return {
+    id: metric as string,
+    label,
+    unit,
+    value: formatNumber(mean, digits),
+    chart:
+      mean == null || values.every((value) => value == null)
+        ? null
+        : {
+            title: `${label} along the run`,
+            note: `The dashed line is the run average, ${format(mean)} ${unit}`,
+            points: distancePoints(stretches, values, unit, format, domain[1]),
+            domain,
+            reference: mean,
+            formatTick: format,
+          },
+  };
+});
+---
+
+{figures.some((figure) => figure.chart) && (
+  <section class="band">
+    <div class="wrap">
+      <h2>Running form</h2>
+      <p class="hint muted">Select a figure to see it along the run.</p>
+      <MetricExplorer name="run" metrics={figures} />
+    </div>
+  </section>
+)}
+
+<style>
+  .hint {
+    margin: -8px 0 16px;
+  }
+</style>

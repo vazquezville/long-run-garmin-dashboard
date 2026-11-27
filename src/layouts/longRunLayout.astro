@@ -16,6 +16,8 @@ const links = [
   { href: "/activities", label: "Runs" },
   { href: "/daily", label: "Health", isQuiet: true },
 ];
+// A single run belongs to the Runs section
+const section = Astro.url.pathname.startsWith("/run/") ? "/activities" : Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -35,7 +37,7 @@ const links = [
           <a class="brand condensed" href="/">Long Run</a>
           <nav aria-label="Sections">
             {links.map((link) => (
-              <a class:list={{ isQuiet: link.isQuiet }} href={link.href} aria-current={link.href === Astro.url.pathname ? "page" : undefined}>
+              <a class:list={{ isQuiet: link.isQuiet }} href={link.href} aria-current={link.href === section ? "true" : undefined}>
                 {link.label}
               </a>
             ))}

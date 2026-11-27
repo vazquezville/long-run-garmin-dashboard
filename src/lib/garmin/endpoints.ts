@@ -1,7 +1,7 @@
 import { cached } from "./cache.ts";
 import type { GarminClient, Query } from "./client.ts";
 import { addDays, splitRange, type DateRange } from "./ranges.ts";
-import type { RawActivity, RawDailySummary, RawFitnessAge, RawHeartRateZones, RawHrv, RawNight, RawVo2Max, RawWeightSummary } from "./rawTypes.ts";
+import type { RawActivity, RawActivityDetail, RawActivityMetrics, RawDailySummary, RawFitnessAge, RawHeartRateZones, RawHrv, RawNight, RawVo2Max, RawWeightSummary } from "./rawTypes.ts";
 
 const recentTtlMs = 30 * 60 * 1000;
 const dayTtlMs = 24 * 60 * 60 * 1000;
@@ -41,6 +41,11 @@ export function createGarminApi(client: GarminClient, today: string) {
 
   return {
     activities: (range: DateRange) => byWindow(range, maxDays.activities, ({ start, end }) => activityPages({ startDate: start, endDate: end }, end)),
+
+    activity: (id: number, date: string) => get<RawActivityDetail | null>(`/activity-service/activity/${id}`, {}, date),
+
+    activityMetrics: (id: number, date: string) =>
+      get<RawActivityMetrics | null>(`/activity-service/activity/${id}/details`, { maxChartSize: 2000, maxPolylineSize: 4000 }, date),
 
     // Whole history, used to know which months can be browsed
     activityHistory: () => activityPages({}, today, dayTtlMs),

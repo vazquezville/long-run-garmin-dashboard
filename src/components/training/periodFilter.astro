@@ -13,7 +13,7 @@ import {
   weekName,
   type Period,
 } from "../../lib/trainingPeriod.ts";
-import PeriodArrow from "./periodArrow.astro";
+import ArrowLink from "../arrowLink.astro";
 
 interface Props {
   period: Period;
@@ -71,7 +71,7 @@ if (period.mode === "month" || period.mode === "year") {
       <p class="since">Since {formatFullDate(period.start)}</p>
     ) : (
       <>
-        <PeriodArrow target={previous} direction="prev" />
+        <ArrowLink href={previous && periodHref(previous)} label={`Previous ${period.mode}`} direction="prev" />
         {period.mode === "week" ? (
           <span class="weekPick">
             <button class="pick" type="button" title="Jump to a date" data-open-picker>{weekName(period)}</button>
@@ -86,7 +86,7 @@ if (period.mode === "month" || period.mode === "year") {
             ))}
           </select>
         )}
-        <PeriodArrow target={next} direction="next" />
+        <ArrowLink href={next && periodHref(next)} label={`Next ${period.mode}`} direction="next" />
       </>
     )}
   </form>

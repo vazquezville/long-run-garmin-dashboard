@@ -21,7 +21,13 @@ const ranged = (name: string, request: Probe["request"]): Probe => ({ name, isRa
 const single = (name: string, request: Probe["request"]): Probe => ({ name, isRanged: false, request });
 const byDates = ({ start, end }: DateRange): Query => ({ startDate: start, endDate: end });
 
+const latestRuns = (await client.get("/activitylist-service/activities/search/activities", { start: 0, limit: 1, activityType: "running" })) as Array<{ activityId: number }>;
+
 const probes: Probe[] = [
+  ...latestRuns.flatMap(({ activityId }) => [
+    single("activity", () => [`/activity-service/activity/${activityId}`]),
+    single("activityDetails", () => [`/activity-service/activity/${activityId}/details`, { maxChartSize: 2000, maxPolylineSize: 4000 }]),
+  ]),
   single("activities", () => ["/activitylist-service/activities/search/activities", { start: 0, limit: 20 }]),
   single("activityTypes", () => ["/activity-service/activity/activityTypes/simple"]),
   ranged("dailySummaries", (r) => ["/usersummary-service/v2/dailysummaries", byDates(r)]),

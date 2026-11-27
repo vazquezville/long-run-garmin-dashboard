@@ -1,0 +1,134 @@
+---
+import type { TrendMetric } from "../lib/chart.ts";
+import LineChart from "./charts/lineChart.astro";
+
+interface Props {
+  // Remembers the chosen figure separately for each use
+  name: string;
+  metrics: TrendMetric[];
+}
+
+const { name, metrics } = Astro.props;
+const first = metrics.find((metric) => metric.chart)?.id;
+---
+
+<div data-explorer={name}>
+  <div class="figures" style={`--count: ${metrics.length}`} role="group" aria-label="Choose what to chart">
+    {metrics.map((metric) => (
+      <button type="button" data-metric={metric.id} aria-pressed={metric.id === first ? "true" : "false"} disabled={!metric.chart}>
+        <span class="value condensed">{metric.value}</span>
+        <span>{metric.label}</span>
+        <span class="unit">{metric.unit}</span>
+      </button>
+    ))}
+  </div>
+  {metrics.map(({ id, chart }) => chart && (
+    <div class="trend chartTheme" data-trend={id} hidden={id !== first}>
+      <h3 class="condensed">{chart.title}</h3>
+      <p class="muted">{chart.note}</p>
+      <LineChart
+        points={chart.points}
+        summary={chart.title}
+        color="var(--ink)"
+        domain={chart.domain}
+        formatTick={chart.formatTick}
+        reference={chart.reference}
+        height={260}
+        connectGaps
+      />
+    </div>
+  ))}
+</div>
+
+<script>
+  for (const explorer of document.querySelectorAll<HTMLElement>("[data-explorer]")) {
+    const key = `metric:${explorer.dataset.explorer}`;
+    const buttons = [...explorer.querySelectorAll<HTMLButtonElement>("[data-metric]")];
+
+    const select = (metric: string) => {
+      for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.metric === metric));
+      for (const trend of explorer.querySelectorAll<HTMLElement>("[data-trend]")) trend.hidden = trend.dataset.trend !== metric;
+    };
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        select(button.dataset.metric!);
+        try {
+          localStorage.setItem(key, button.dataset.metric!);
+        } catch {}
+      });
+    }
+
+    // Keeps the chosen chart while browsing
+    try {
+      const saved = localStorage.getItem(key);
+      if (buttons.some((button) => button.dataset.metric === saved && !button.disabled)) select(saved!);
+    } catch {}
+  }
+</script>
+
+<style>
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(var(--count), minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--quiet);
+    text-align: left;
+  }
+
+  button:hover:enabled {
+    background: var(--line);
+  }
+
+  button:disabled {
+    background: none;
+    cursor: default;
+  }
+
+  button[aria-pressed="true"],
+  button[aria-pressed="true"]:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .value {
+    font-size: 56px;
+  }
+
+  .unit {
+    color: var(--muted);
+  }
+
+  button[aria-pressed="true"] .unit {
+    color: #bdbdbd;
+  }
+
+  .trend {
+    margin-top: 28px;
+  }
+
+  @media (max-width: 1040px) {
+    .figures {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .figures {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .value {
+      font-size: 40px;
+    }
+  }
+</style>

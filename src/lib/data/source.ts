@@ -5,6 +5,7 @@ import { createGarminApi } from "../garmin/endpoints.ts";
 import { lastDays, toIsoDate, type DateRange } from "../garmin/ranges.ts";
 import { availableMonths } from "../periods.ts";
 import { maxRange } from "../views.ts";
+import { toRunDetail } from "./runDetail.ts";
 import { toActivities, toDays, toFitnessAge, toHeartRateZones, toHrv, toNights, toVo2, toWeights } from "./normalize.ts";
 
 const client = createGarminClient(GARMIN_API_KEY);
@@ -42,6 +43,9 @@ export function createSource(now: Date = new Date()) {
         const older = history.filter((activity) => activity.startTimeLocal < recent.start);
         return toActivities([...older, ...latest], { start: "2000-01-01", end: today });
       }),
+    // Only call with an id and date taken from the activity list
+    runDetail: (id: number, date: string) =>
+      load("the details of this run", async () => toRunDetail(...(await Promise.all([api.activity(id, date), api.activityMetrics(id, date)])))),
     days: (range: DateRange = recent) => load("daily summaries", async () => toDays(await api.dailySummaries(range), range, today)),
     nights: (range: DateRange = recent) => load("sleep", async () => toNights(await api.sleep(range), range)),
     hrv: (range: DateRange = recent) => load("heart rate variability", async () => toHrv(await api.hrv(range), range)),

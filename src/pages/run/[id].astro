@@ -1,0 +1,41 @@
+---
+import KmSplits from "../../components/run/kmSplits.astro";
+import RunCharts from "../../components/run/runCharts.astro";
+import RunEffort from "../../components/run/runEffort.astro";
+import RunForm from "../../components/run/runForm.astro";
+import RunHero from "../../components/run/runHero.astro";
+import WorkoutBlocks from "../../components/run/workoutBlocks.astro";
+import LongRunLayout from "../../layouts/longRunLayout.astro";
+import { chartStretchM, toStretches } from "../../lib/data/runDetail.ts";
+import { createSource } from "../../lib/data/source.ts";
+import { sessionName } from "../../lib/sessionKind.ts";
+
+const source = createSource();
+const activities = await source.allActivities();
+const runs = (activities.data ?? []).filter((activity) => activity.sport === "run");
+const index = runs.findIndex((activity) => String(activity.id) === Astro.params.id);
+// Unknown ids never reach the API
+if (activities.data && index < 0) return new Response("Run not found", { status: 404 });
+const run = runs[index];
+const loaded = run ? await source.runDetail(run.id, run.date) : null;
+const detail = loaded?.data ?? null;
+const samples = detail?.samples ?? [];
+const length = chartStretchM(samples.at(-1)?.distanceM ?? 0);
+const splits = toStretches(samples, 1000);
+const stretches = toStretches(samples, length, length / 2);
+---
+
+<LongRunLayout title={run ? sessionName(run.name) : "Run"} errors={[activities.error, loaded?.error]}>
+  <Fragment slot="field">
+    {run && <RunHero run={run} older={runs[index + 1]} newer={runs[index - 1]} route={detail?.route ?? []} />}
+  </Fragment>
+  {run && (
+    <>
+      {detail && detail.blocks.length > 0 && <WorkoutBlocks blocks={detail.blocks} />}
+      {splits.length > 0 && <KmSplits splits={splits} />}
+      {detail && stretches.length > 0 && <RunCharts stretches={stretches} detail={detail} climb={run.elevationGain} />}
+      <RunForm form={run.form} stretches={stretches} />
+      <RunEffort run={run} detail={detail} />
+    </>
+  )}
+</LongRunLayout>
