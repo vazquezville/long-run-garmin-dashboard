@@ -1,0 +1,95 @@
+---
+import { formAverage, hasForm, type FormMetric } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  activities: Activity[];
+}
+
+const { activities } = Astro.props;
+const metrics: Array<[metric: FormMetric, label: string, unit: string, digits: number]> = [
+  ["cadence", "Cadence", "spm", 0],
+  ["strideM", "Stride length", "m", 2],
+  ["groundContactMs", "Ground contact time", "ms", 0],
+  ["oscillationCm", "Vertical oscillation", "cm", 1],
+  ["verticalRatio", "Vertical ratio", "%", 1],
+  ["powerW", "Power", "W", 0],
+];
+const runs = activities.filter((activity) => activity.sport === "run");
+const measured = runs.filter(hasForm);
+const figures = metrics.flatMap(([metric, label, unit, digits]) => {
+  const value = formAverage(measured, metric);
+  return value == null ? [] : [{ label, unit, value: formatNumber(value, digits) }];
+});
+---
+
+{figures.length > 0 && (
+  <section class="block">
+    <h3>Running form</h3>
+    <p class="muted">
+      Time-weighted averages from {measured.length} of {formatCount(runs.length, "run")}
+    </p>
+    <dl>
+      {figures.map((figure) => (
+        <div>
+          <dt>{figure.label}</dt>
+          <dd>
+            {figure.value} <span>{figure.unit}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+)}
+
+<style>
+  p {
+    font-size: 13px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px 24px;
+    margin-top: 12px;
+  }
+
+  /* Figures sit above their labels, as in the results line */
+  div {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+  }
+
+  dt {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  dd {
+    font-size: 1.75rem;
+    font-stretch: 115%;
+    font-weight: 700;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  dd span {
+    color: var(--textMuted);
+    font-size: 0.9rem;
+    font-stretch: 100%;
+    font-weight: 500;
+  }
+
+  @media (max-width: 480px) {
+    dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 16px;
+    }
+
+    dd {
+      font-size: 1.4rem;
+    }
+  }
+</style>

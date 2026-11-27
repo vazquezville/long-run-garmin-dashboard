@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { average, bestEffort, bucketByDate, overallPace, weekStart } from "../src/lib/data/aggregate.ts";
+import { average, bestEffort, bucketByDate, formAverage, overallPace, weekStart } from "../src/lib/data/aggregate.ts";
 import { toActivities, toDays, toNights, toSport, toWeights } from "../src/lib/data/normalize.ts";
 
 const range = { start: "2026-11-23", end: "2026-11-26" };
@@ -81,6 +81,19 @@ test("weeks start on Monday and partial weeks are flagged", () => {
       ["2026-11-23", false, 1],
     ],
   );
+});
+
+test("running form is weighted by time and skips missing or broken readings", () => {
+  const raw = [
+    { ...run(1, "2026-11-23", 1000, 600), averageRunningCadenceInStepsPerMinute: 160, avgStrideLength: 100 },
+    { ...run(2, "2026-11-24", 5000, 1800), averageRunningCadenceInStepsPerMinute: 180, avgStrideLength: 120 },
+    { ...run(3, "2026-11-25", 9000, 3600), averageRunningCadenceInStepsPerMinute: 26 },
+    { ...run(4, "2026-11-26", 3000, 1800), activityType: { typeKey: "walking" }, averageRunningCadenceInStepsPerMinute: 110 },
+  ];
+  const activities = toActivities(raw, range);
+  assert.equal(formAverage(activities, "cadence"), 175);
+  assert.equal(formAverage(activities, "strideM"), 1.15);
+  assert.equal(formAverage(activities, "powerW"), null);
 });
 
 test("pace is weighted by distance and best efforts pick the fastest run", () => {

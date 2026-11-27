@@ -17,6 +17,14 @@ export interface Activity {
   trainingLoad: number | null;
   zoneSec: number[];
   fastest: { km1: number | null; km5: number | null; km10: number | null; half: number | null };
+  form: {
+    cadence: number | null;
+    strideM: number | null;
+    groundContactMs: number | null;
+    oscillationCm: number | null;
+    verticalRatio: number | null;
+    powerW: number | null;
+  };
 }
 
 export interface ActivityBucket {

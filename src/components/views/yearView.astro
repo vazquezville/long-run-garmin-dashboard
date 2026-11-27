@@ -9,6 +9,7 @@ import LineChart from "../charts/lineChart.astro";
 import MonthTable from "../monthTable.astro";
 import EffortsPanel from "../panels/effortsPanel.astro";
 import RunDistancePanel from "../panels/runDistancePanel.astro";
+import RunFormPanel from "../panels/runFormPanel.astro";
 import SportsPanel from "../panels/sportsPanel.astro";
 import TimeBySportPanel from "../panels/timeBySportPanel.astro";
 import ZonesPanel from "../panels/zonesPanel.astro";
@@ -133,6 +134,7 @@ const tableRows = activityMonths
       <LineChart points={vo2Points} summary="Weekly VO2 max" color="var(--fitness)" connectGaps />
     </ChartPanel>
   )}
+  <RunFormPanel activities={activities} />
   <MonthTable rows={tableRows} months={months} />
 </PageSection>
 <PageSection title="Body">

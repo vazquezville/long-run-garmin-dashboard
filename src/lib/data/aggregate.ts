@@ -61,6 +61,17 @@ export function overallPace(activities: Activity[]): number | null {
   return kilometers > 0 ? sum(moved.map((activity) => activity.movingSec)) / kilometers : null;
 }
 
+export type FormMetric = keyof Activity["form"];
+
+export const hasForm = (activity: Activity) => activity.sport === "run" && Object.values(activity.form).some((value) => value != null);
+
+// Mean across runs weighted by moving time, null when none recorded it
+export function formAverage(activities: Activity[], metric: FormMetric): number | null {
+  const measured = activities.filter((activity) => activity.sport === "run" && activity.form[metric] != null);
+  const seconds = sum(measured.map((activity) => activity.movingSec));
+  return seconds > 0 ? sum(measured.map((activity) => activity.form[metric]! * activity.movingSec)) / seconds : null;
+}
+
 export type Effort = keyof Activity["fastest"];
 
 export function bestEffort(activities: Activity[], effort: Effort): { seconds: number; date: string } | null {

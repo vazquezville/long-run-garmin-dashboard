@@ -24,6 +24,12 @@ export interface RawActivity {
   fastestSplit_5000?: Maybe<number>;
   fastestSplit_10000?: Maybe<number>;
   fastestSplit_21098?: Maybe<number>;
+  averageRunningCadenceInStepsPerMinute?: Maybe<number>;
+  avgStrideLength?: Maybe<number>;
+  avgGroundContactTime?: Maybe<number>;
+  avgVerticalOscillation?: Maybe<number>;
+  avgVerticalRatio?: Maybe<number>;
+  avgPower?: Maybe<number>;
 }
 
 export interface RawDailySummary {

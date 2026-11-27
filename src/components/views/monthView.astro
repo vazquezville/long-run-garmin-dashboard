@@ -11,6 +11,7 @@ import StepsChart from "../metrics/stepsChart.astro";
 import StressChart from "../metrics/stressChart.astro";
 import MonthCalendar from "../monthCalendar.astro";
 import EffortsPanel from "../panels/effortsPanel.astro";
+import RunFormPanel from "../panels/runFormPanel.astro";
 import SportsPanel from "../panels/sportsPanel.astro";
 import ZonesPanel from "../panels/zonesPanel.astro";
 import PageSection from "../pageSection.astro";
@@ -67,6 +68,7 @@ const stats = [
       <SportsPanel activities={activities} />
       <EffortsPanel activities={activities} />
     </div>
+    <RunFormPanel activities={activities} />
   </PageSection>
 )}
 <PageSection title="All activities">

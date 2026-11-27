@@ -8,6 +8,10 @@ const isInRange = (date: string, { start, end }: DateRange) => date >= start && 
 // Zero and negative values mean "no reading" for vitals
 const positive = (value: number | null | undefined): number | null => (value != null && value > 0 ? value : null);
 
+// Lower cadences come from sensor dropouts, not from running
+const minCadence = 100;
+const toCadence = (value: number | null | undefined): number | null => (value != null && value >= minCadence ? value : null);
+
 const sportRules: Array<[pattern: RegExp, sport: Sport]> = [
   [/running/, "run"],
   [/walking|hiking/, "walk"],
@@ -25,6 +29,7 @@ export function toActivities(raw: RawActivity[], range: DateRange): Activity[] {
   return [...unique.values()]
     .map((item): Activity => {
       const speed = positive(item.averageSpeed);
+      const stride = positive(item.avgStrideLength);
       return {
         id: item.activityId,
         name: item.activityName ?? "Activity",
@@ -46,6 +51,14 @@ export function toActivities(raw: RawActivity[], range: DateRange): Activity[] {
           km5: positive(item.fastestSplit_5000),
           km10: positive(item.fastestSplit_10000),
           half: positive(item.fastestSplit_21098),
+        },
+        form: {
+          cadence: toCadence(item.averageRunningCadenceInStepsPerMinute),
+          strideM: stride && stride / 100,
+          groundContactMs: positive(item.avgGroundContactTime),
+          oscillationCm: positive(item.avgVerticalOscillation),
+          verticalRatio: positive(item.avgVerticalRatio),
+          powerW: positive(item.avgPower),
         },
       };
     })

@@ -11,6 +11,7 @@ import LineChart from "../charts/lineChart.astro";
 import PageSection from "../pageSection.astro";
 import EffortsPanel from "../panels/effortsPanel.astro";
 import RunDistancePanel from "../panels/runDistancePanel.astro";
+import RunFormPanel from "../panels/runFormPanel.astro";
 import SportsPanel from "../panels/sportsPanel.astro";
 import TimeBySportPanel from "../panels/timeBySportPanel.astro";
 import ZonesPanel from "../panels/zonesPanel.astro";
@@ -91,6 +92,7 @@ const noRuns = runs.length === 0 && "No runs in this period.";
       <LineChart points={pacePoints} summary="Pace of each run" color={sports.run.color} formatTick={formatClock} isInverted />
     </ChartPanel>
   </div>
+  <RunFormPanel activities={done} />
 </PageSection>
 <PageSection title="Effort">
   <div class="threeColumns">
