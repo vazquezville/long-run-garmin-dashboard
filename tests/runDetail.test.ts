@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { chartStretchM, toRoutePath, toRunDetail, toStretches } from "../src/lib/data/runDetail.ts";
+import { chartStretchM, hasOwnLaps, toLaps, toRoutePath, toRunDetail, toStretches } from "../src/lib/data/runDetail.ts";
 
 const keys = ["sumDistance", "sumDuration", "directHeartRate", "directElevation", "directDoubleCadence", "directStrideLength"];
 const metrics = (rows: Array<Array<number | null>>) => ({
@@ -56,4 +56,30 @@ test("toRoutePath keeps proportions and needs at least two points", () => {
   const route = toRoutePath([[0, 0], [0, 2], [1, 2]], 100)!;
   assert.equal(route.path, "M0 50L100 50L100 0");
   assert.deepEqual([route.width, route.height], [100, 50]);
+});
+
+const lap = (intensity: string, total_distance: number, total_timer_time = 100) => ({ intensity, total_distance, total_timer_time, avg_heart_rate: 140 });
+
+test("toLaps names the steps of a workout and leaves plain laps unnamed", () => {
+  const workout = toLaps([lap("warmup", 1000, 300), lap("active", 400), lap("rest", 0)]);
+  assert.deepEqual(
+    workout.map((item) => [item.label, item.isWork, item.paceSecPerKm]),
+    [
+      ["Warm up", false, 300],
+      ["Work", true, 250],
+      ["Rest", false, null],
+    ],
+  );
+  assert.deepEqual(
+    toLaps([lap("active", 500), lap("active", 500)]).map((item) => item.label),
+    ["Lap", "Lap"],
+  );
+});
+
+test("hasOwnLaps skips laps that only repeat the kilometer splits", () => {
+  const has = (...laps: Array<ReturnType<typeof lap>>) => hasOwnLaps(toLaps(laps));
+  assert.equal(has(lap("active", 1000), lap("active", 1002), lap("active", 340)), false);
+  assert.equal(has(lap("active", 5000)), false);
+  assert.equal(has(lap("active", 800), lap("active", 800)), true);
+  assert.equal(has(lap("warmup", 1000), lap("active", 1000)), true);
 });

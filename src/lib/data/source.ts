@@ -3,7 +3,7 @@ import { GARMIN_API_KEY } from "astro:env/server";
 import { createGarminClient, GarminAuthError } from "../garmin/client.ts";
 import { createGarminApi } from "../garmin/endpoints.ts";
 import { lastDays, toIsoDate, type DateRange } from "../garmin/ranges.ts";
-import { toRunDetail } from "./runDetail.ts";
+import { toLaps, toRunDetail } from "./runDetail.ts";
 import { toActivities, toDays, toFitnessAge, toHeartRateZones, toHrv, toNights, toVo2, toWeights } from "./normalize.ts";
 
 const client = createGarminClient(GARMIN_API_KEY);
@@ -42,6 +42,7 @@ export function createSource(now: Date = new Date()) {
     // Only call with an id and date taken from the activity list
     runDetail: (id: number, date: string) =>
       load("the details of this run", async () => toRunDetail(...(await Promise.all([api.activity(id, date), api.activityMetrics(id, date)])))),
+    runLaps: (id: number, date: string) => load("the laps of this run", async () => toLaps(await api.activityLaps(id, date))),
     days: (range: DateRange) => load("daily summaries", async () => toDays(await api.dailySummaries(range), range, today)),
     nights: (range: DateRange) => load("sleep", async () => toNights(await api.sleep(range), range)),
     hrv: (range: DateRange) => load("heart rate variability", async () => toHrv(await api.hrv(range), range)),

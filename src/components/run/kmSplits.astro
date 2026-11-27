@@ -18,7 +18,7 @@ const climb = (meters: number | null) => (meters == null ? "–" : `${Math.round
   <div class="wrap">
     <h2>Splits</h2>
     <p class="muted">Longer bars are faster, orange marks the fastest full kilometer</p>
-    <table>
+    <table class="paceTable">
       <thead>
         <tr>
           <th scope="col">Km</th>
@@ -48,73 +48,8 @@ const climb = (meters: number | null) => (meters == null ? "–" : `${Math.round
     margin: -8px 0 12px;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-variant-numeric: tabular-nums;
-  }
-
-  th,
-  td {
-    padding: 5px 0 5px 16px;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  th:first-child {
-    width: 64px;
-    padding-left: 0;
-    text-align: left;
-  }
-
+  /* The pace column starts where its bars do */
   th:nth-child(2) {
     text-align: left;
-  }
-
-  thead th {
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  tbody tr {
-    border-top: 1px solid var(--line);
-  }
-
-  tbody th {
-    font-size: 28px;
-  }
-
-  .pace {
-    width: 100%;
-    text-align: left;
-  }
-
-  .pace span {
-    display: block;
-    min-width: 56px;
-    padding: 3px 10px;
-    border-radius: 4px;
-    background: var(--ink);
-    color: var(--paper);
-    font-weight: 700;
-    text-align: right;
-  }
-
-  .isFastest .pace span {
-    background: var(--field);
-    color: var(--ink);
-  }
-
-  @media (max-width: 560px) {
-    th,
-    td {
-      padding-left: 8px;
-      font-size: 13px;
-    }
-
-    th:first-child {
-      width: 40px;
-    }
   }
 </style>

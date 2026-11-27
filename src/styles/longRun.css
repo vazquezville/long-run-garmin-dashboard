@@ -107,6 +107,80 @@ h2 {
   margin-inline: -8px;
 }
 
+/* Rows of pace bars, used for laps and kilometer splits */
+.paceTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.paceTable :is(th, td) {
+  padding: 5px 0 5px 16px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.paceTable tr > :first-child {
+  width: 64px;
+  padding-left: 0;
+  text-align: left;
+}
+
+.paceTable thead th {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.paceTable tbody tr {
+  border-top: 1px solid var(--line);
+}
+
+.paceTable tbody th {
+  font-size: 28px;
+}
+
+.paceTable .pace {
+  width: 100%;
+  text-align: left;
+}
+
+.paceTable .pace span {
+  display: block;
+  min-width: 56px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  text-align: right;
+}
+
+.paceTable .isEasy .pace span {
+  background: var(--line);
+  color: var(--ink);
+}
+
+.paceTable .isFastest .pace span {
+  background: var(--field);
+  color: var(--ink);
+}
+
+@media (max-width: 560px) {
+  .paceTable :is(th, td) {
+    padding-left: 8px;
+    font-size: 13px;
+  }
+
+  .paceTable tbody th {
+    font-size: 24px;
+  }
+
+  .paceTable tr > :first-child {
+    width: 40px;
+  }
+}
+
 .tooltip {
   position: fixed;
   z-index: 10;

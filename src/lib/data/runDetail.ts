@@ -1,4 +1,4 @@
-import type { RawActivityDetail, RawActivityMetrics } from "../garmin/rawTypes.ts";
+import type { RawActivityDetail, RawActivityMetrics, RawLap } from "../garmin/rawTypes.ts";
 import { average } from "./aggregate.ts";
 import { positive, toCadence } from "./normalize.ts";
 import type { Activity } from "./types.ts";
@@ -94,6 +94,44 @@ export function toRunDetail(summary: RawActivityDetail | null, metrics: RawActiv
     // A single block repeats the whole run, so it says nothing
     blocks: blocks.length > 1 ? blocks : [],
   };
+}
+
+export interface Lap {
+  label: string;
+  // Counts towards the fastest lap, unlike warm ups and recoveries
+  isWork: boolean;
+  distanceM: number;
+  seconds: number;
+  paceSecPerKm: number | null;
+  hr: number | null;
+}
+
+const lapLabels: Record<string, string> = { warmup: "Warm up", active: "Work", interval: "Work", rest: "Rest", recovery: "Recovery", cooldown: "Cool down" };
+
+export function toLaps(raw: RawLap[]): Lap[] {
+  const kinds = raw.map((lap) => lapLabels[String(lap.intensity)] ?? "Lap");
+  // Without a structured workout every lap is just a lap
+  const isStructured = new Set(kinds).size > 1;
+  return raw.map((lap, index) => {
+    const distanceM = lap.total_distance ?? 0;
+    const seconds = lap.total_timer_time ?? 0;
+    const kind = kinds[index]!;
+    return {
+      label: isStructured ? kind : "Lap",
+      isWork: !isStructured || kind === "Work",
+      distanceM,
+      seconds,
+      paceSecPerKm: distanceM > 0 && seconds > 0 ? seconds / (distanceM / 1000) : null,
+      hr: positive(lap.avg_heart_rate),
+    };
+  });
+}
+
+// Automatic kilometer laps repeat the splits, and a single lap repeats the run
+export function hasOwnLaps(laps: Lap[]): boolean {
+  if (laps.length < 2) return false;
+  const isKilometer = (lap: Lap) => Math.abs(lap.distanceM - 1000) < 20;
+  return laps.some((lap) => lap.label !== "Lap") || !laps.slice(0, -1).every(isKilometer);
 }
 
 // Value at an exact distance, interpolated between the two nearest samples

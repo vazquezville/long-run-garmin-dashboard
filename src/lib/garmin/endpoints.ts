@@ -1,7 +1,8 @@
 import { cached } from "./cache.ts";
 import type { GarminClient, Query } from "./client.ts";
+import { readLaps } from "./fit.ts";
 import { addDays, splitRange, type DateRange } from "./ranges.ts";
-import type { RawActivity, RawActivityDetail, RawActivityMetrics, RawDailySummary, RawFitnessAge, RawHeartRateZones, RawHrv, RawNight, RawVo2Max, RawWeightSummary } from "./rawTypes.ts";
+import type { RawActivity, RawActivityDetail, RawActivityMetrics, RawDailySummary, RawFitnessAge, RawHeartRateZones, RawHrv, RawLap, RawNight, RawVo2Max, RawWeightSummary } from "./rawTypes.ts";
 
 const recentTtlMs = 30 * 60 * 1000;
 const dayTtlMs = 24 * 60 * 60 * 1000;
@@ -46,6 +47,12 @@ export function createGarminApi(client: GarminClient, today: string) {
 
     activityMetrics: (id: number, date: string) =>
       get<RawActivityMetrics | null>(`/activity-service/activity/${id}/details`, { maxChartSize: 2000, maxPolylineSize: 4000 }, date),
+
+    // The parsed laps are cached, not the file they come from
+    activityLaps: (id: number, date: string) => {
+      const path = `/download-service/files/activity/${id}`;
+      return cached(`laps ${path}`, ttlFor(date), async () => readLaps(await client.download(path))) as Promise<RawLap[]>;
+    },
 
     // Whole history, used to know which months can be browsed
     activityHistory: () => activityPages({}, today, dayTtlMs),

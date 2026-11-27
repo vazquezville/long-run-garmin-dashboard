@@ -1,0 +1,74 @@
+---
+import type { Lap } from "../../lib/data/runDetail.ts";
+import { formatClock, formatNumber } from "../../lib/format.ts";
+
+interface Props {
+  laps: Lap[];
+}
+
+const { laps } = Astro.props;
+// Tiny laps, such as a late button press, would distort the scale
+const timed = laps.filter((lap) => lap.distanceM >= 50 && lap.paceSecPerKm != null);
+const quickest = Math.min(...timed.map((lap) => lap.paceSecPerKm!));
+const fastest = Math.min(...timed.filter((lap) => lap.isWork).map((lap) => lap.paceSecPerKm!));
+const distance = (meters: number) => (meters < 1000 ? `${formatNumber(meters)} m` : `${formatNumber(meters / 1000, 2)} km`);
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Laps</h2>
+    <p class="muted">As your watch recorded them. Longer bars are faster, orange marks the fastest work lap.</p>
+    <table class="paceTable">
+      <thead>
+        <tr>
+          <th scope="col">Lap</th>
+          <th scope="col">Distance</th>
+          <th scope="col">Time</th>
+          <th scope="col">Pace per km</th>
+          <th scope="col">Heart rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {laps.map((lap, index) => {
+          const isScaled = timed.includes(lap);
+          return (
+            <tr class:list={{ isEasy: !lap.isWork, isFastest: isScaled && lap.isWork && lap.paceSecPerKm === fastest }}>
+              <th scope="row">
+                <span class="number condensed">{index + 1}</span>
+                {lap.label !== "Lap" && <span class="kind muted">{lap.label}</span>}
+              </th>
+              <td>{distance(lap.distanceM)}</td>
+              <td>{formatClock(lap.seconds)}</td>
+              <td class="pace">
+                <span style={`width: ${isScaled ? (quickest / lap.paceSecPerKm!) * 100 : 0}%`}>{formatClock(lap.paceSecPerKm)}</span>
+              </td>
+              <td>{formatNumber(lap.hr)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+  p {
+    margin: -8px 0 12px;
+  }
+
+  th:nth-child(4) {
+    text-align: left;
+  }
+
+  .number,
+  .kind {
+    display: block;
+  }
+
+  .kind {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+</style>

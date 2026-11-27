@@ -16,6 +16,8 @@ export type Query = Record<string, string | number | boolean>;
 
 export interface GarminClient {
   get(path: string, query?: Query): Promise<unknown>;
+  // Raw bytes, for files such as the original activity recording
+  download(path: string): Promise<Buffer>;
 }
 
 export class GarminError extends Error {
@@ -112,13 +114,13 @@ export function createGarminClient(apiKey: string, tokenFile = ".cache/token.jso
     return pendingToken;
   }
 
-  async function send(url: URL): Promise<unknown> {
+  async function send(url: URL, accept: string): Promise<Response> {
     let token = await getToken();
     let hasRefreshed = false;
 
     for (let attempt = 0; ; attempt++) {
       const response = await fetch(url, {
-        headers: { Accept: "application/json", Authorization: `Bearer ${token.value}`, "User-Agent": userAgent },
+        headers: { Accept: accept, Authorization: `Bearer ${token.value}`, "User-Agent": userAgent },
         signal: AbortSignal.timeout(timeoutMs),
       });
 
@@ -138,8 +140,7 @@ export function createGarminClient(apiKey: string, tokenFile = ".cache/token.jso
         throw new GarminError(`GET ${url.pathname} failed with HTTP ${response.status} ${detail}`, response.status);
       }
 
-      const body = await response.text();
-      return body.trim() ? JSON.parse(body) : null;
+      return response;
     }
   }
 
@@ -147,7 +148,13 @@ export function createGarminClient(apiKey: string, tokenFile = ".cache/token.jso
     get(path, query = {}) {
       const url = new URL(path, baseUrl);
       for (const [name, value] of Object.entries(query)) url.searchParams.set(name, String(value));
-      return limit(() => send(url));
+      // The body is read inside the limiter, so slots stay taken until it arrives
+      return limit(async () => {
+        const body = await (await send(url, "application/json")).text();
+        return body.trim() ? JSON.parse(body) : null;
+      });
     },
+
+    download: (path) => limit(async () => Buffer.from(await (await send(new URL(path, baseUrl), "*/*")).arrayBuffer())),
   };
 }

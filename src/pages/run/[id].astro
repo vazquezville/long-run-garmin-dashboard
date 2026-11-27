@@ -1,12 +1,13 @@
 ---
 import KmSplits from "../../components/run/kmSplits.astro";
+import LapTable from "../../components/run/lapTable.astro";
 import RunCharts from "../../components/run/runCharts.astro";
 import RunEffort from "../../components/run/runEffort.astro";
 import RunForm from "../../components/run/runForm.astro";
 import RunHero from "../../components/run/runHero.astro";
 import WorkoutBlocks from "../../components/run/workoutBlocks.astro";
 import LongRunLayout from "../../layouts/longRunLayout.astro";
-import { chartStretchM, toStretches } from "../../lib/data/runDetail.ts";
+import { chartStretchM, hasOwnLaps, toStretches } from "../../lib/data/runDetail.ts";
 import { createSource } from "../../lib/data/source.ts";
 import { sessionName } from "../../lib/sessionKind.ts";
 
@@ -17,21 +18,23 @@ const index = runs.findIndex((activity) => String(activity.id) === Astro.params.
 // Unknown ids never reach the API
 if (activities.data && index < 0) return new Response("Run not found", { status: 404 });
 const run = runs[index];
-const loaded = run ? await source.runDetail(run.id, run.date) : null;
+const [loaded, recorded] = run ? await Promise.all([source.runDetail(run.id, run.date), source.runLaps(run.id, run.date)]) : [null, null];
 const detail = loaded?.data ?? null;
+const laps = recorded?.data ?? [];
 const samples = detail?.samples ?? [];
 const length = chartStretchM(samples.at(-1)?.distanceM ?? 0);
 const splits = toStretches(samples, 1000);
 const stretches = toStretches(samples, length, length / 2);
 ---
 
-<LongRunLayout title={run ? sessionName(run.name) : "Run"} errors={[activities.error, loaded?.error]}>
+<LongRunLayout title={run ? sessionName(run.name) : "Run"} errors={[activities.error, loaded?.error, recorded?.error]}>
   <Fragment slot="field">
     {run && <RunHero run={run} older={runs[index + 1]} newer={runs[index - 1]} route={detail?.route ?? []} />}
   </Fragment>
   {run && (
     <>
       {detail && detail.blocks.length > 0 && <WorkoutBlocks blocks={detail.blocks} />}
+      {hasOwnLaps(laps) && <LapTable laps={laps} />}
       {splits.length > 0 && <KmSplits splits={splits} />}
       {detail && stretches.length > 0 && <RunCharts stretches={stretches} detail={detail} climb={run.elevationGain} />}
       <RunForm form={run.form} stretches={stretches} />

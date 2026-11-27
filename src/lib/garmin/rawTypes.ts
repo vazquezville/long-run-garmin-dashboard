@@ -52,6 +52,14 @@ export interface RawActivityMetrics {
   geoPolylineDTO?: Maybe<{ polyline?: Maybe<Array<{ lat?: Maybe<number>; lon?: Maybe<number>; valid?: Maybe<boolean> }>> }>;
 }
 
+// Lap as read from the original FIT file
+export interface RawLap {
+  intensity?: Maybe<string | number>;
+  total_distance?: Maybe<number>;
+  total_timer_time?: Maybe<number>;
+  avg_heart_rate?: Maybe<number>;
+}
+
 export interface RawDailySummary {
   calendarDate: string;
   includesWellnessData?: Maybe<boolean>;
