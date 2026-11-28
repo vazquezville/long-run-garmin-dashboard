@@ -1,0 +1,103 @@
+---
+import { within } from "../../lib/data/aggregate.ts";
+import type { Activity } from "../../lib/data/types.ts";
+import { formatCount, formatFullDate, formatNumber } from "../../lib/format.ts";
+import { climbSummary, totalClimb, weeklyRange } from "../../lib/training.ts";
+import { bucketUnit, periodBuckets, type Period } from "../../lib/trainingPeriod.ts";
+import ColumnChart from "../charts/columnChart.astro";
+import WeeklyChart from "./weeklyChart.astro";
+
+interface Props {
+  // Whole running history, since the weekly chart also shows earlier weeks
+  history: Activity[];
+  period: Period;
+  today: string;
+}
+
+const { history, period, today } = Astro.props;
+const runs = within(history, period);
+const climb = climbSummary(runs);
+const isWeekly = weeklyRange(period, today) != null;
+const title = `Climb by ${bucketUnit(period)}`;
+
+// Periods too long for weekly columns are drawn by month or year
+const columns = isWeekly
+  ? []
+  : periodBuckets(period, today).map((bucket) => {
+      const items = within(runs, bucket);
+      const meters = totalClimb(items);
+      return {
+        label: bucket.label,
+        segments: [{ value: meters, color: "var(--ink)" }],
+        tip: {
+          title: bucket.title,
+          rows: bucket.isFuture
+            ? [{ label: "", value: "Still to come" }]
+            : [{ label: "m", value: formatNumber(meters) }, { label: "", value: formatCount(items.length, "run") }],
+        },
+      };
+    });
+---
+
+<section class="band">
+  <div class="wrap">
+    <h2>Climb</h2>
+    {climb ? (
+      <dl>
+        <div>
+          <dt>Total climb</dt>
+          <dd class="condensed">{formatNumber(climb.total)}<small>m</small></dd>
+        </div>
+        <div>
+          <dt>Average per kilometer</dt>
+          <dd class="condensed">{formatNumber(climb.perKm, 1)}<small>m</small></dd>
+        </div>
+        <div>
+          <dt>
+            Most in one run, <a href={`/run/${climb.top.id}`}>{formatFullDate(climb.top.date)}</a>
+          </dt>
+          <dd class="condensed">{formatNumber(climb.top.elevationGain)}<small>m</small></dd>
+        </div>
+      </dl>
+    ) : (
+      <p class="muted">No runs with elevation in this period.</p>
+    )}
+    {isWeekly ? (
+      <WeeklyChart activities={history} period={period} today={today} total={totalClimb} unit="m" noun="run" label="Weekly climb" />
+    ) : (
+      climb && (
+        <div class="chartTheme">
+          <h3 class="condensed">{title}</h3>
+          <ColumnChart columns={columns} summary={title} height={230} />
+        </div>
+      )
+    )}
+  </div>
+</section>
+
+<style>
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 56px;
+    margin-bottom: 24px;
+  }
+
+  /* The gap keeps thousands commas off the labels */
+  dl div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* The figure reads first, above its label */
+  dd {
+    order: -1;
+    font-size: 56px;
+  }
+
+  small {
+    margin-left: 4px;
+    font-size: 0.5em;
+  }
+</style>

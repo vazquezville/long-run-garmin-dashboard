@@ -1,6 +1,7 @@
 ---
 import PeriodFilter from "../components/periodFilter.astro";
 import BestEfforts from "../components/training/bestEfforts.astro";
+import ClimbTotals from "../components/training/climbTotals.astro";
 import HealthBand from "../components/training/healthBand.astro";
 import HeartRateZones from "../components/training/heartRateZones.astro";
 import PeriodHero from "../components/training/periodHero.astro";
@@ -54,6 +55,7 @@ const distance = (items: typeof runs) => sum(items.map((run) => run.distanceKm))
       </div>
     </section>
   )}
+  <ClimbTotals history={runs} period={period} today={today} />
   <TrainingLoad activities={activities.data ?? []} period={period} today={today} />
   <HeartRateZones runs={selected} limits={zones.data ?? []} />
   <RunningForm period={period} today={today} runs={selected} vo2={vo2.data ?? []} />

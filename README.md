@@ -23,7 +23,7 @@ While working on the code, use `pnpm dev` instead of step 4.
 
 | Page | Address | Content |
 | --- | --- | --- |
-| Training | `/` | Running by week, month, year, last X days or all time, with training load, heart rate zones, running form and records |
+| Training | `/` | Running by week, month, year, last X days or all time, with climb, training load, heart rate zones, running form and records |
 | Runs | `/runs` | Every run, filtered by type, year, distance and name, sorted by date, distance, pace or load |
 | Run | `/run/<id>` | One run from the list: route, watch laps, kilometer splits, charts along the distance, running form and heart rate zones |
 | Health | `/health` | Sleep, recovery, daily activity, body and other sports, for periods of up to a year |

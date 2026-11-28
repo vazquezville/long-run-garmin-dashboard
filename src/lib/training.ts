@@ -14,6 +14,18 @@ export function weeklyRange(period: DateRange, today: string): DateRange | null 
 
 export const totalLoad = (activities: Activity[]) => sum(activities.map((activity) => activity.trainingLoad));
 
+export const totalClimb = (activities: Activity[]) => sum(activities.map((activity) => activity.elevationGain));
+
+// Meters climbed, per kilometer and in the hilliest run, null without elevation data
+export function climbSummary(activities: Activity[]) {
+  const measured = activities.filter((activity) => activity.elevationGain != null);
+  if (measured.length === 0) return null;
+  const total = totalClimb(measured);
+  const kilometers = sum(measured.map((activity) => activity.distanceKm));
+  const top = measured.reduce((best, activity) => (activity.elevationGain! > best.elevationGain! ? activity : best));
+  return { total, perKm: kilometers > 0 ? total / kilometers : null, top };
+}
+
 // Load of the last seven days against the weekly average of the last four weeks
 export function loadComparison(activities: Activity[], end: string) {
   const since = (days: number) => totalLoad(activities.filter((activity) => activity.date > addDays(end, -days) && activity.date <= end));

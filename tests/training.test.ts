@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { toActivities } from "../src/lib/data/normalize.ts";
-import { intensitySplit, loadComparison, weeklyRange, zoneTotals } from "../src/lib/training.ts";
+import { climbSummary, intensitySplit, loadComparison, weeklyRange, zoneTotals } from "../src/lib/training.ts";
 
 const activity = (activityId: number, date: string, activityTrainingLoad: number, hrTimeInZone_2 = 0, hrTimeInZone_4 = 0) => ({
   activityId,
@@ -32,6 +32,21 @@ test("intensitySplit groups the zones into three efforts", () => {
     ],
   );
   assert.deepEqual(intensitySplit([0, 0, 0, 0, 0]), []);
+});
+
+test("climbSummary adds up the climb and keeps the hilliest run", () => {
+  const runs = toActivities(
+    [
+      { activityId: 1, startTimeLocal: "2026-11-27 18:00:00", distance: 10000, elevationGain: 80 },
+      { activityId: 2, startTimeLocal: "2026-11-25 18:00:00", distance: 5000, elevationGain: 220 },
+      // Left out of the average, since it has no elevation
+      { activityId: 3, startTimeLocal: "2026-11-24 18:00:00", distance: 8000 },
+    ],
+    { start: "2026-01-01", end: "2026-12-31" },
+  );
+  const climb = climbSummary(runs);
+  assert.deepEqual([climb?.total, climb?.perKm, climb?.top.id], [300, 20, 2]);
+  assert.equal(climbSummary([]), null);
 });
 
 test("weeklyRange shows at least sixteen weeks and gives up past sixty", () => {
